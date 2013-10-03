@@ -17,55 +17,64 @@ import time
 start = time.time()
 
 def calc_length2(lat1, lon1, lat2, lon2):
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
+    R = 6371 # radius of the earth (km)
+    dlat = math.radians(lat2 - lat1) # latitude difference in radians
+    dlon = math.radians(lon2 - lon1) # longitude difference in radians
     
-    latAverage = math.radians( (lat1+lat2) / 2 )
-    length = R * math.sqrt((dlat)**2 + (math.cos(latAverage) * dlon) **2)
+    latAverage = math.radians( (lat1+lat2) / 2 ) # average latitude in radians
+    length = R * math.sqrt((dlat)**2 + (math.cos(latAverage) * dlon) **2) # formula of linear distance between points
     return length
 
 
 
 def calc_optimumAngle(directIrr, siteLat):
 
-    testAngle = [x * 0.1 for x in range(0, 90)]  # [0:0.1:90]
-    angleLength = len(testAngle)
+    testAngle = [x * 0.1 for x in range(0, 90)]  # [0:0.1:90] specifices angle between 0 and 90 degrees
+    angleLength = len(testAngle) # length of test angle array
     
-    meanIrr = list(range(angleLength))
+    meanIrr = list(range(angleLength)) # init array for length for mean irradiance
 
+    # iterates through each angle and calculates the mean irradiance for that year
     for i in range(angleLength):
         yearlyIrradiance = []
 
         for j in range(365):
-            argRadians = math.radians(360/365*(284 + j))
-            a = 90 - siteLat + 23.45 * math.sin(argRadians)
+            # This simulates a year of how much irradiance is incident on a panel surface.
             
+            # arbitary angle that is used for calculating the irradiance
+            argRadians = math.radians(360/365*(284 + j))
+            # same as above for the next 3 lines
+            a = 90 - siteLat + 23.45 * math.sin(argRadians)
             argRadians_1 = math.radians(a + testAngle[i])
             argRadians_2 = math.radians(a)
 
+            # Calculates the irradiance on the panel for a day
             yearlyIrradiance.append(directIrr[j] * math.sin(argRadians_1) / math.sin(argRadians_2))
         
+        # Take the mean irradiance and stores within an array
         meanIrr[i] = numpy.mean(yearlyIrradiance)
     
-
+    # Takes the angle with the highest average irradiance
     ind = meanIrr.index(max(meanIrr))
 
+    #the optimum angle for solar panel
     opAngle = testAngle[ind]
 
     return opAngle
 
 
 def calc_resistance(mat, temp, diameter, length):
+    ''' Calculates the resistance of a cable given the material, ambient temperature, diameter and length. '''
 
-    if mat == 'Cu':
+    # uses base temperature of 20 degrees celcius and corrects for the ambient temperature.
+    if mat == 'Cu': # resistivity for copper
         p = 1.68e-8*(1 + 0.00362*(temp-20))
-    elif mat == 'Al':
+    elif mat == 'Al': # aluminimum
         p = 2.82e-8*(1 + 0.0039*(temp-20))
     
-     
+    # area of the cable
     area = math.pi / 4*(diameter*1e-3)**2
-     
+
     resistance = p*length/area
     return resistance
 
@@ -218,6 +227,25 @@ class PVArray(object):
     def setAngle(self, angle):
         ''' Set the angle of the panels within the array '''
         self.angle = angle
+# -------------------------------------------------------------------------------------------------------------------
+# MATERIAL
+# -------------------------------------------------------------------------------------------------------------------
+
+class Material(object):
+    ''' Class object for a material '''
+    def __init__(self, name, resistivity, tempCoefficient):
+        ''' Initialise a material object '''
+        self.name = name
+        self.resistivity = resistivity
+        self.tempCoefficient = tempCoefficient
+
+    def getResistivity(self):
+        ''' Return the resistivity of the material '''
+        return self.resistivity
+
+    def setResistivity(self, resistivity):
+        ''' Sets the resistivity of the material '''
+        self.resistivity = resistivity
 
 # -------------------------------------------------------------------------------------------------------------------
 # DC CABLE
@@ -235,6 +263,7 @@ DCDepRate = 6 # DC cable depreciation rate (# per year)
 class DCCable(object):
     ''' Class to store the information relating to the DC cable between the PV array and the inverter '''
     def __init__(self, diameter, material, length):
+        ''' Initialise a DC cable object '''
         self.diameter = diameter    # Diameter of the cable (mm)
         self.material = material    # Material of the conductor within the cable (e.g. Cu, Al)
         self.length = length        # Length of the total amount of cable
@@ -263,20 +292,6 @@ class DCCable(object):
         ''' Set the length of the cable '''
         self.length = length
 
-class Material(object):
-    ''' Class object for a material '''
-    def __init__(self, name, resistivity):
-        self.name = name
-        self.resistivity = resistivity
-
-    def getResistivity(self):
-        ''' Return the resistivity of the material '''
-        return self.resistivity
-
-    def setResistivity(self, resistivity):
-        ''' Sets the resistivity of the material '''
-        self.resistivity = resistivity
-
 # -------------------------------------------------------------------------------------------------------------------
 # INVERTER
 # -------------------------------------------------------------------------------------------------------------------
@@ -293,6 +308,7 @@ InvDepRate = 7 # Inverter depreciation rate (# per year)
 class Inverter(object):
     ''' Class to store the information relating to the Inverter '''
     def __init__(self, powerFactor, efficiency, voltage):
+        '''Initialise an inverter object '''
         self.powerFactor = powerFactor  # Power factor of the inverter
         self.efficiency = efficiency    # Efficiency of the inverter
         self.voltage = voltage          # Output voltage of the inverter to the transformer
@@ -304,6 +320,23 @@ class Inverter(object):
     def setPowerFactor(self, powerFactor):
         ''' Set the power factor of the inverter '''
         self.powerFactor = powerFactor
+
+    def getEfficiency(self):
+        ''' Return the efficiency of the inverter '''
+        return self.efficiency
+
+    def setEfficiency(self, efficiency):
+        ''' Set the efficiency of the inverter '''
+        self.efficiency = efficiency
+
+    def getVoltage(self):
+        ''' Return the output voltage of the inverter '''
+        return self.voltage
+
+    def setVoltage(self, voltage):
+        ''' Set the output voltage of the inverter '''
+        self.voltage = voltage
+
 # -------------------------------------------------------------------------------------------------------------------
 # Inv-Tx Lines (AC1 Cables)
 # -------------------------------------------------------------------------------------------------------------------
@@ -316,6 +349,38 @@ AC1Length = 100 # Length of the Inv-Tx cable
 # Financial
 AC1Cost = 100 # Cost of cable per meter
 AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
+
+class AC1Cable(object):
+    ''' Class that stores the information relating to the AC cable between the inverter and the transformer '''
+    def __init__(self, diameter, material, length):
+        ''' Initialise the AC cable object '''
+        self.diameter = diameter
+        self.material = material
+        self.length = length
+
+    def getDiameter(self):
+        ''' Return the cable diameter '''
+        return self.diameter
+
+    def setDiameter(self, diameter):
+        ''' Set the cable diameter '''
+        self.diameter = diameter
+
+    def getMaterial(self):
+        ''' Return the cable material '''
+        return self.material
+
+    def setMaterial(self, material):
+        ''' Set the material of the cable '''
+        self.material = material
+
+    def getLength(self):
+        ''' Return the length of the cable '''
+        return self.length
+
+    def setLength(self, length):
+        ''' Set the length of the cable '''
+        self.length = length
 
 # -------------------------------------------------------------------------------------------------------------------
 # TRANSFORMER
@@ -331,8 +396,40 @@ TxCost = 1000000 # Cost of the transformer
 TxDepRate = 6 # Transformer depreciation rate (# per year)
 TxScrap = 30000 # Transformer scrap value
 
+class Transformer(object):
+    ''' Class that stores the information relating to a transformer '''
+    def __init__(self, voltage, efficiency, VARating):
+        ''' Initialise the transformer object '''
+        self.voltage = voltage
+        self.efficiency = efficiency
+        self.VARating = VARating
+
+    def getVoltage(self):
+        ''' Return the high voltage side of the transformer '''
+        return self.voltage
+
+    def setVoltage(self, voltage):
+        ''' Set the high voltage side of the transformer '''
+        self.voltage = voltage
+
+    def getEfficiency(self):
+        ''' Return the efficiency of the transformer '''
+        return self.efficiency
+
+    def setEfficiency(self, efficiency):
+        ''' Set the efficiency of the transformer '''
+        self.efficiency = efficiency
+
+    def getVARating(self):
+        ''' Return the rating of the transformer (MVA) '''
+        return self.VARating
+
+    def setVARating(self, VARating):
+        ''' Set the rating of the transformer (MVA) '''
+        self.VARating = VARating
+
 # -------------------------------------------------------------------------------------------------------------------
-# GXP LINES
+# GEP LINES
 # -------------------------------------------------------------------------------------------------------------------
 
 # Deprecated variables
@@ -346,6 +443,54 @@ AC2Length = 0
 AC2Cost = 100 # Cost of SINGLE cable per meter
 TranLineCost = 1000 # Cost of building the transmission line per kilometer
 AC2DepRate = 6 # Depreciation rate of the GXP line (# per year)
+
+class GEPLine(object):
+    ''' Class that stores the information relating the transmission line between the solar farm and the grid entry
+    point '''
+    def __init__(self, strandNum, diameter, material, length, latitude, longitude):
+        ''' Initialise the GEP object '''
+        self.strandNum = strandNum
+        self.diameter = diameter
+        self.material = material
+        self.length = length
+        self.latitude = latitude
+        self.longitude = longitude
+
+    def getStrandNum(self):
+        ''' Return the number of strands in ACC or ACSR cable '''
+        return self.strandNum
+
+    def setStrandNum(self, strandNum):
+        ''' Set the number of strands in ACC or ACSR cable '''
+        self.strandNum = strandNum
+
+    def getDiameter(self):
+        ''' Return the strand diameter '''
+        return self.diameter
+
+    def setDiameter(self, diameter):
+        ''' Set the diameter of the strand (mm) '''
+        self.diameter = diameter
+
+    def getMaterial(self):
+        ''' Return the strand material '''
+        return self.material
+
+    def setMaterial(self, material):
+        ''' Set the material of the strand '''
+        self.material = material
+
+    def getLength(self):
+        ''' Return the length of the strand '''
+        return self.length
+
+    def setLength(self, length):
+        ''' Set the strand length '''
+        self.length = length
+
+    def getLatitude(self):
+        ''' Return the latitude of the GEP '''
+        return self.latitude
 
 # -------------------------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
@@ -366,6 +511,7 @@ temp = []
 irradiance = [] # Average solar irradiance perpendicular to the ground in W/m^2
 sunlightHours = [] # Number of sunlight hours per day (could turn into a function)
 
+# see pysolar for irradiance and temperature
 for i in range(365):
     temp.append((-0.0005 * i**2) + (0.2138 * i) + 2.1976)
     irradiance.append((-0.021* i**2) + (8.5246 * i) + 74.471) # Formula calculated from data in source
@@ -379,6 +525,13 @@ breakerCost = 10000 # Cost of each circuit breakers
 breakerDepRate = 6 # Circuit breaker depreciation rate (# per year)
 landPrice = 100000 # Cost per km^2 of land
 landAppRate = 3 # Land appreciation rate (# per year)
+
+class Site(object):
+    ''' Class that stores the information relating to the solar farm site '''
+    def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, latitude, longitude):
+        ''' Initialise the solar farm site object '''
+
+
 
 # -------------------------------------------------------------------------------------------------------------------
 # MISC FINANCIAL
