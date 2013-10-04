@@ -492,6 +492,18 @@ class GEPLine(object):
         ''' Return the latitude of the GEP '''
         return self.latitude
 
+    def setLatitude(self, latitude):
+        ''' Set the latitude of the GEP '''
+        self.latitude = latitude
+
+    def getLongitude(self):
+        ''' Return the longitude of the GEP '''
+        return self.longitude
+
+    def setLongitude(self, longitude):
+        ''' Set the longitude of the GEP '''
+        self.longitude = longitude
+
 # -------------------------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
 # -------------------------------------------------------------------------------------------------------------------
@@ -526,12 +538,153 @@ breakerDepRate = 6 # Circuit breaker depreciation rate (# per year)
 landPrice = 100000 # Cost per km^2 of land
 landAppRate = 3 # Land appreciation rate (# per year)
 
+class CircuitBreaker(object):
+    ''' Class for storing information relating to a  circuit breaker '''
+    def __init__(self, cost, depRate):
+        ''' Initialise the circuit breaker class object '''
+        self.cost = cost
+        self.depRate = depRate
+
+    def getCost(self):
+        ''' Return the cost of a circuit breaker '''
+        return self.cost
+
+    def setCost(self, cost):
+        ''' Set the cost of the circuit breaker '''
+        self.cost = cost
+
+    def getDepRate(self):
+        ''' Return the depreciation rate of the circuit breaker '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the depreciation rate of the circuit breaker '''
+        self.depRate = depRate
+
 class Site(object):
     ''' Class that stores the information relating to the solar farm site '''
-    def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, latitude, longitude):
+    def __init__(self, transformer, transformerNum, array, arrayNum, circuitBreaker, circuitBreakerNum, inverter,
+        inverterNum, latitude, longitude, temperature, irradiance, sunlightHours, landPrice, landAppRate):
         ''' Initialise the solar farm site object '''
+        self.transformer = transformer
+        self.transformerNum = transformerNum
+        self.array = array
+        self.arrayNum = arrayNum
+        self.circuitBreaker = circuitBreaker
+        self.circuitBreakerNum = circuitBreakerNum
+        self.inverter = inverter
+        self.inverterNum = inverterNum
+        self.latitude = latitude
+        self.longitude = longitude
+        self.temperature = temperature
+        self.irradiance = irradiance
+        self.sunlightHours = sunlightHours
+        self.landPrice = landPrice
+        self.landAppRate = landAppRate
 
+    def getTransformer(self):
+        ''' Return the transformer used within the site '''
+        return self.transformer
 
+    def setTransformer(self, transformer):
+        ''' Set the transformer type used within the site '''
+        self.transformer = transformer
+
+    def getTransformerNum(self):
+        ''' Return the number of transformers within the site '''
+        return self.transformerNum
+
+    def setTransformerNum(self):
+        ''' Set the number of transformers within the site '''
+        self.transformerNum = transformerNum
+
+    def getArray(self):
+        ''' Return the array type used within the site '''
+        return self.array
+
+    def setArray(self, array):
+        ''' Set the array type used within the site '''
+        self.array = array
+
+    def getArrayNum(self, array):
+        ''' Return the number of arrays within the site '''
+        return self.arrayNum
+
+    def setArrayNum(self, arrayNum):
+        ''' Set the number of arrays within the site '''
+        self.arrayNum = arrayNum
+
+    def getCircuitBreaker(self):
+        ''' Return the circuit breaker type '''
+        self.circuitBreaker
+
+    def setCircuitBreaker(self, circuitBreaker):
+        ''' Set the circuit breaker type '''
+        self.circuitBreaker = circuitBreaker
+
+    def getCircuitBreakerNum(self):
+        ''' Return the number of circuit breakers within the site '''
+        return self.circuitBreakerNum
+
+    def setCircuitBreakerNum(self, circuitBreakerNum):
+        ''' Set the number of circuit beakers within the site '''
+        self.circuitBreakerNum = circuitBreakerNum
+
+    def getInverter(self):
+        ''' Return the inverter type '''
+        return self.Inverter
+
+    def setInverter(self, inverter):
+        ''' Set the inverter type '''
+        self.Inverter = inverter
+
+    def getInverterNum(self):
+        ''' Return the number of inverters '''
+        return self.inverterNum
+
+    def setInverterNum(self, inverterNum):
+        ''' Set the number of inverters '''
+        self.inverterNum = inverterNum
+
+    def getLatitude(self):
+        ''' Return the latitude of the site '''
+        return self.latitude
+
+    def setLatitude(self, latitude):
+        ''' Set the latitude of the site '''
+        self.latitude = latitude
+
+    def getLongitude(self):
+        ''' Return the longitude of the site '''
+        return self.longitude
+
+    def setLongitude(self, longitude):
+        ''' Set the longitude of the site '''
+        self.longitude = longitude
+
+    def getTemperature(self):
+        ''' Return the temperature of the site '''
+        return self.temperature
+
+    def setTemperature(self, temperature):
+        ''' Set the temperature of the site '''
+        self.temperature = temperature
+
+    def getIrradiance(self):
+        ''' Return the irradiance of the site '''
+        return self.irradiance
+
+    def setIrradiance(self, irradiance):
+        ''' Set the irradiance of the site '''
+        self.irradiance = irradiance
+
+    def getSunlightHours(self):
+        ''' Return the sunlight hours of the site '''
+        return self.sunlightHours
+
+    def setSunlightHours(self, sunlightHours):
+        ''' Set the sunlight hours of the site '''
+        self.sunlightHours = sunlightHours
 
 # -------------------------------------------------------------------------------------------------------------------
 # MISC FINANCIAL
