@@ -2,20 +2,23 @@
 # SolarSimulation : Solar farm model simulator
 # -------------------------------------------------------------------------------------------------------------------
 # Author: Darren O'Neill
-# Author: Jarrad Raumati
+# Author: Jarrad Raumati 
+# Author: Ashok Fernandez
 # Date: 20/09/2013
 #
 # This script simulates a solar farm to obtain the effeciency of a given
 # location
 
 # Input Variables--------------------------------------------------------#
+import operator
 import Pysolar
 import Queue
+import threading
 import math
 import matplotlib.pyplot as plt
 import numpy
 import time
-from datetime import *
+import datetime
 
 # For the progress bar in the console when the scraping operation is happening
 from time import sleep
@@ -81,7 +84,7 @@ def calcCableResistance(cable, temperature):
     
     # area of the cable
     area = math.pi / 4 * (cable.getDiameter() * 1e-3) ** 2
-    resistance = p * cable.getLength() / area
+    resistance = caliResistivity * cable.getLength() / area
 
     return resistance
 
@@ -256,7 +259,7 @@ class PVArray(object):
         ''' Set the angle of the panels within the array '''
         self.angle = angle
 
-    def getArrayArea(self):
+    def getArea(self):
         '''Calculates the total area of the panels in m^2'''
         return self.moduleType.getArea() * self.moduleNum
 # -------------------------------------------------------------------------------------------------------------------
@@ -591,9 +594,7 @@ class GEPLine(object):
         self.diameter = diameter
         self.material = material
         self.length = length
-        self.latitude = latitude
-        self.longitude = longitude
-
+        
         # Financial properties
         self.costPerMeter = costPerMeter
         self.depRate = depRate
@@ -714,17 +715,17 @@ class CircuitBreaker(object):
 class Site(object):
     ''' Class that stores the information relating to the solar farm site '''
     def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, 
-                 temperature, landPrice, landAppRate):
+                 latitude, longitude, temperature, landPrice, landAppRate):
         ''' Initialise the solar farm site object '''
         self.transformerNum = transformerNum
         self.arrayNum = arrayNum
         self.circuitBreakerNum = circuitBreakerNum
         self.inverterNum = inverterNum
-        self.latitude = latitude
-        self.longitude = longitude
         self.temperature = temperature
         self.landPrice = landPrice
         self.landAppRate = landAppRate
+        self.latitude = latitude
+        self.longitude = longitude
 
 
     def getTransformerNum(self):
@@ -735,7 +736,7 @@ class Site(object):
         ''' Set the number of transformers within the site '''
         self.transformerNum = transformerNum
 
-    def getArrayNum(self, array):
+    def getArrayNum(self):
         ''' Return the number of arrays within the site '''
         return self.arrayNum
 
@@ -758,6 +759,14 @@ class Site(object):
     def setInverterNum(self, inverterNum):
         ''' Set the number of inverters '''
         self.inverterNum = inverterNum
+
+    def getLatitude(self):
+        ''' Return the site latitude '''
+        return self.latitude
+
+    def getLongitude(self):
+        ''' Return the site longitude '''
+        return self.longitude
 
     def getTemperature(self, month):
         ''' Get the temperature of the site during the given month, months are specified
@@ -870,7 +879,8 @@ class thread_SimulateDay(threading.Thread):
     def __init__(self, inputQueue, outputQueue, timestep_mins):
         ''' Takes an input of SimulationDay objects, runs the simulation for that day and stores the result
         inside the SimulationDay object before pushing it to the output queue'''
-        self.timestep_mins
+        threading.Thread.__init__(self)
+        self.timestep_mins = timestep_mins
         self.inputQueue = inputQueue
         self.outputQueue = outputQueue
     
@@ -926,12 +936,13 @@ class thread_SimulateDay(threading.Thread):
 
 
             # Number of days into the simulation this day occurs
-            currentSimDay = (simDay.parameters['start'] - simDay.date).day
+            currentSimDay = (simDay.parameters['start'] - simDay.date).days
 
             # Running totals for the total output energy effciencies at each timestep
             energyOutput = 0
             totalEffeciency = 0
             elecEff = 0
+            sunnyTime = 0
 
             # Simulate the irradiance over a day in half hour increments
             for i in range(STEPS_PER_DAY):
@@ -973,14 +984,16 @@ class thread_SimulateDay(threading.Thread):
                 AC2Output = TxOut - AC2loss
                 
                 # Final outputs
-                totalEffeciency += (AC2Output / (irradiance * totalArea)) * 100
-                elecEff += (AC2Output / solarOutput) * 100
-                energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
+                if irradiance > 0:
+                    sunnyTime += 1
+                    totalEffeciency += (AC2Output / (irradiance * totalArea)) * 100
+                    elecEff += (AC2Output / solarOutput) * 100
+                    energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
 
 
             # Average the effciencies over the day
-            totalEffeciency /= STEPS_PER_DAY
-            elecEff /= STEPS_PER_DAY
+            totalEffeciency /= sunnyTime
+            elecEff /= sunnyTime
             
             # Save the output data to the SimulationDay object
             simDay.electricalEffciency = elecEff
@@ -1043,7 +1056,7 @@ class Simulation(object):
         '''Initilise the simulation'''
         self.start = start
         self.finish = finish
-        self.days = (start - finish).days
+        self.days = (finish - start).days
         self.numThreads = numThreads
         self.simulationTimestepMins = simulationTimestepMins
 
@@ -1064,14 +1077,18 @@ class Simulation(object):
         }
         
         # Queues to store the input and output to the simulation
-        self.inputDays = Queue.Queue()
-        self.outputDays = Queue.Queue()
+        self.inputQueue = Queue.Queue()
+        self.outputQueue = Queue.Queue()
+
+        print "Initialising %i day simulation" % self.days
 
         # Queue up the list of days to simulate
-        dates = [self.start - datetime.timedelta(days=self.days) for self.days in range(0,numdays)]
+        dates = [self.start - datetime.timedelta(days=x) for x in range(0,self.days)]
         for day in dates:
-            simulationDay = SimlationDay(day)
-            self.inputDays.put(simulationDay)
+            simulationDay = SimulationDay(day, self.parameters)
+            self.inputQueue.put(simulationDay)
+
+        print "Added %i simulations to the work queue" % self.inputQueue.qsize()
 
 
     def getStartDate(self):
@@ -1092,7 +1109,7 @@ class Simulation(object):
         numberOfSimulationDays = self.inputQueue.qsize()
 
         # Spawn the threads
-        for i in range(NUMBER_OF_THREADS):
+        for i in range(self.numThreads):
             simulationThread = thread_SimulateDay(self.inputQueue, self.outputQueue, self.simulationTimestepMins)
             simulationThread.setDaemon(True)
             simulationThread.start()
@@ -1108,11 +1125,58 @@ class Simulation(object):
         while(completedSimulations < numberOfSimulationDays):
             # Stops the console from being updated unecesseraly
             sleep(0.25)
-            completedSimulations = (numberOfSimulationDays - queue_inputGames.qsize())
+            completedSimulations = (numberOfSimulationDays - self.inputQueue.qsize())
             bar.update(completedSimulations)
 
         # Finish up the progress bar
         bar.finish()
+
+        print "Finished printing bar"
+
+        # Join threads
+        self.inputQueue.join()
+
+        print "Finished joining threads"
+
+        # Dequeue the results
+        resultDays = []
+        while not self.outputQueue.empty():
+            resultDays.append(self.outputQueue.get())
+            self.outputQueue.task_done()
+
+        print "Finished Dequeueing results"
+
+        # Sort the resultant simulation dates into order
+        resultDays.sort(key=operator.attrgetter('date'))
+
+        print "Sorted results"
+
+        days = []
+        electricalEnergy = []
+        totalEffciency = []
+        electricalEffciency = []
+
+        for day in resultDays:
+            days.append(day.date)
+            electricalEnergy.append(day.electricalEnergy)
+            electricalEffciency.append(day.electricalEffciency)
+            totalEffciency.append(day.totalEffciency)
+
+        print "split data"
+
+        plt.figure(1)
+        plt.subplot(311)
+        plt.plot(days, electricalEnergy)
+
+        plt.subplot(312)
+        plt.plot(days, electricalEffciency, 'g')
+
+        plt.subplot(313)
+        plt.plot(days, totalEffciency, 'r')
+        
+        plt.show()
+
+
 
 # -------------------------------------------------------------------------------------------------------------------
 
