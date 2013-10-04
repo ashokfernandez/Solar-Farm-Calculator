@@ -941,6 +941,23 @@ class CalculateDay(threading.Thread):
         self.inputQueue = inputQueue
         self.outputQueue = outputQueue
     
+<<<<<<< HEAD
+#     #-------------Financial-----------------------------------------------#
+#     # if day == startDay and i != 1:
+#     #     # Calculate finicial data
+#     #     year = year + 1
+#     #     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
+#     #     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
+#     #     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
+#     #     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
+#     #     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
+        
+#     #     expenses = maintainceBudget*year + labourCosts
+#     #     totalIncome = sum(energyOutput)/1000*buyBackRate
+        
+#     #     if (totalIncome > (expenses + capitalWorth(1)))
+#     #         break
+=======
     def run(self):
         while True:
             # Check if there are any more days to simulate
@@ -985,6 +1002,7 @@ class CalculateDay(threading.Thread):
 
                 # Calculates the solar power in W for a whole day
                 solarOutput = irradiance * totalArea * panelEff  # TODO: DEGREDATION RATE (1 - panelDegRate / (100*365) * i)
+>>>>>>> ea25858f6a07f2da750ce3ab36f034134ed8dd42
         
                 # DC cable calcs
                 DCresistance = calc_resistance(DCcableMaterial, temperature, DCdiameter, DCcableLength)
