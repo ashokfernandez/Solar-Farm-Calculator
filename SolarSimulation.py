@@ -120,49 +120,25 @@ class PVPanel(object):
         ''' Return the panel voltage '''
         return self.voltage
 
-    def setVoltage(self, voltage):
-        ''' Set the panel voltage '''
-        self.voltage = voltage
-
     def getEfficiency(self):
         ''' Return the panel efficiency '''
         return self.efficiency
-
-    def setEfficiency(self, efficiency):
-        ''' Set the panel efficiency '''
-        self.efficiency = efficiency
 
     def getDegradationRate(self):
         ''' Return the panel asset degradation rate '''
         return self.degradationRate
 
-    def setDegradationRate(self, degradationRate):
-        ''' Set the asset degradation rate '''
-        self.degradationRate = degradationRate
-
     def getArea(self):
         ''' Return the panel surface area '''
         return self.area
-
-    def setArea(self):
-        ''' Set the panel surface area '''
-        self.area = area
 
     def getCost(self):
         ''' Return the cost of the panel '''
         return self.cost
 
-    def setCost(self, cost):
-        ''' Set the cost of the panel '''
-        self.cost = cost
-
     def getDepRate(self):
         ''' Return the asset depreciation rate of the panel '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the asset value depreciation rate of the panel '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR MODULE
@@ -185,19 +161,9 @@ class PVModule(object):
         ''' Calculate the total voltage of the module '''
         self.voltage = self.panelType.getVoltage() * self.panelNum        
 
-    def setPanelType(self, panelType):
-        ''' Set the panel type within a module '''
-        self.panelType = panelType
-        self.__calculateModuleVoltage()
-
     def getPanelType(self):
         ''' Return the panel object within the module '''
         return self.panelType
-
-    def setPanelNum(self, panelNum):
-        ''' Set the number of panels within a module '''
-        self.panelNum = panelNum
-        self.__calculateModuleVoltage
 
     def getVoltage(self):
         ''' Return the module voltage '''
@@ -234,18 +200,9 @@ class PVArray(object):
         ''' Return the module type within the array '''
         return self.moduleType
 
-    def setModuleType(self, moduleType):
-        ''' Set the module type within the array '''
-        self.moduleType = moduleType
-        self.__CalculateArrayVoltage
-
     def getModuleNum(self):
         ''' return the number of modules within the array '''
         return self.moduleNum
-
-    def setModuleNum(self, moduleNum):
-        ''' Set the number of modules within the array '''
-        self.moduleNum = moduleNum
 
     def getVoltage(self):
         ''' Return the voltage of the array '''
@@ -254,10 +211,6 @@ class PVArray(object):
     def getAngle(self):
         ''' Return the angle of the PV panels '''
         return self.angle
-
-    def setAngle(self, angle):
-        ''' Set the angle of the panels within the array '''
-        self.angle = angle
 
     def getArea(self):
         '''Calculates the total area of the panels in m^2'''
@@ -278,17 +231,9 @@ class Material(object):
         ''' Return the resistivity of the material '''
         return self.resistivity
 
-    def setResistivity(self, resistivity):
-        ''' Sets the resistivity of the material '''
-        self.resistivity = resistivity
-
     def getTempCoefficient(self):
         ''' Return the temperature coefficient of the material '''
         return self.tempCoefficient
-
-    def setTempCoefficient(self, tempCoefficient):
-        ''' Set the temperature coefficient of the material '''
-        self.tempCoefficient = tempCoefficient
 
 # -------------------------------------------------------------------------------------------------------------------
 # DC CABLE
@@ -319,33 +264,17 @@ class DCCable(object):
         ''' Return the cable diameter '''
         return self.diameter
 
-    def setDiameter(self, diameter):
-        ''' Set the cable diameter '''
-        self.diameter = diameter
-
     def getMaterial(self):
         ''' Return the cable material '''
         return self.material
-
-    def setMaterial(self, material):
-        ''' Set the material of the cable '''
-        self.material = material
 
     def getLength(self):
         ''' Return the length of the cable '''
         return self.length
 
-    def setLength(self, length):
-        ''' Set the length of the cable '''
-        self.length = length
-
     def getCostPerMeter(self):
         ''' Return the cost of the DC cable '''
         return self.cost
-
-    def setCostPerMeter(self, costPerMeter):
-        ''' Set the cost per meter of cable '''
-        self.costPerMeter = costPerMeter
 
     def getCost(self):
         ''' Return the total cost of cable '''
@@ -354,10 +283,6 @@ class DCCable(object):
     def getDepRate(self):
         ''' Return the asset depreciation rate of the cable '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the asset depreciation rate of the cable '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # INVERTER
@@ -388,41 +313,21 @@ class Inverter(object):
         ''' Return the power factor '''
         return self.powerFactor
 
-    def setPowerFactor(self, powerFactor):
-        ''' Set the power factor of the inverter '''
-        self.powerFactor = powerFactor
-
     def getEfficiency(self):
         ''' Return the efficiency of the inverter '''
         return self.efficiency
-
-    def setEfficiency(self, efficiency):
-        ''' Set the efficiency of the inverter '''
-        self.efficiency = efficiency
 
     def getVoltage(self):
         ''' Return the output voltage of the inverter '''
         return self.voltage
 
-    def setVoltage(self, voltage):
-        ''' Set the output voltage of the inverter '''
-        self.voltage = voltage
-
     def getCost(self):
         ''' Return the unit cost of the inverter '''
         return self.cost
 
-    def setCost(self, cost):
-        ''' Set the unit cost of the inverter '''
-        self.cost = cost
-
     def getDepRate(self):
         ''' Return the asset depreciation rate of the inverter '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the asset depreciation rate of the inverter '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # Inv-Tx Lines (AC1 Cables)
@@ -454,33 +359,17 @@ class AC1Cable(object):
         ''' Return the cable diameter '''
         return self.diameter
 
-    def setDiameter(self, diameter):
-        ''' Set the cable diameter '''
-        self.diameter = diameter
-
     def getMaterial(self):
         ''' Return the cable material '''
         return self.material
-
-    def setMaterial(self, material):
-        ''' Set the material of the cable '''
-        self.material = material
 
     def getLength(self):
         ''' Return the length of the cable '''
         return self.length
 
-    def setLength(self, length):
-        ''' Set the length of the cable '''
-        self.length = length
-
     def getCostPerMeter(self):
         ''' Return the cost per meter of the cable '''
         return self.costPerMeter
-
-    def setCostPerMeter(self, costPerMeter):
-        ''' Set the cost per meter of the cable '''
-        self.costPerMeter = costPerMeter
 
     def getCost(self):
         ''' Return the total cost of the cable '''
@@ -489,10 +378,6 @@ class AC1Cable(object):
     def getDepRate(self):
         ''' Return the asset depreciation rate of the cable '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the asset depreciation rate of the cable '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # TRANSFORMER
@@ -525,49 +410,25 @@ class Transformer(object):
         ''' Return the high voltage side of the transformer '''
         return self.voltage
 
-    def setVoltage(self, voltage):
-        ''' Set the high voltage side of the transformer '''
-        self.voltage = voltage
-
     def getEfficiency(self):
         ''' Return the efficiency of the transformer '''
         return self.efficiency
-
-    def setEfficiency(self, efficiency):
-        ''' Set the efficiency of the transformer '''
-        self.efficiency = efficiency
 
     def getVARating(self):
         ''' Return the rating of the transformer (MVA) '''
         return self.VARating
 
-    def setVARating(self, VARating):
-        ''' Set the rating of the transformer (MVA) '''
-        self.VARating = VARating
-
     def getCost(self):
         ''' Return the unit cost of the transformer '''
         return self.cost
-
-    def setCost(self, cost):
-        ''' Set the unit cost of the transformer '''
-        self.cost = cost
 
     def getDepRate(self):
         ''' Return the asset depreciation rate of the transformer '''
         return self.depRate
 
-    def setDepRate(self, depRate):
-        ''' Set the asset depreciation rate of the transformer '''
-        self.depRate = depRate
-
     def getScrap(self):
         ''' Return the scrap value of the cable '''
-        return self.sc
-
-    def setScrap(self, scrap):
-        ''' Set the scrap value of the cable '''
-        self.scrap = scrap
+        return self.scrap
 
 # -------------------------------------------------------------------------------------------------------------------
 # GEP LINES
@@ -603,41 +464,21 @@ class GEPLine(object):
         ''' Return the number of strands in ACC or ACSR cable '''
         return self.strandNum
 
-    def setStrandNum(self, strandNum):
-        ''' Set the number of strands in ACC or ACSR cable '''
-        self.strandNum = strandNum
-
     def getDiameter(self):
         ''' Return the strand diameter '''
         return self.diameter
-
-    def setDiameter(self, diameter):
-        ''' Set the diameter of the strand (mm) '''
-        self.diameter = diameter
 
     def getMaterial(self):
         ''' Return the strand material '''
         return self.material
 
-    def setMaterial(self, material):
-        ''' Set the material of the strand '''
-        self.material = material
-
     def getLength(self):
         ''' Return the length of the strand '''
         return self.length
 
-    def setLength(self, length):
-        ''' Set the strand length '''
-        self.length = length
-
     def getCostPerMeter(self):
         ''' Return the cost per meter of the transmission line '''
         return self.costPerMeter
-
-    def setCostPerMeter(self, costPerMeter):
-        ''' Set the cost per meter of the transmission line '''
-        self.costPerMeter = costPerMeter
 
     def getCost(self):
         ''' Return the total cost of the transmission line '''
@@ -646,10 +487,6 @@ class GEPLine(object):
     def getDepRate(self):
         ''' Return the asset depreciation rate of the transmission line '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the asset depreciation rate of the transmission line '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # CIRCUIT BREAKER
@@ -666,17 +503,9 @@ class CircuitBreaker(object):
         ''' Return the cost of a circuit breaker '''
         return self.cost
 
-    def setCost(self, cost):
-        ''' Set the cost of the circuit breaker '''
-        self.cost = cost
-
     def getDepRate(self):
         ''' Return the depreciation rate of the circuit breaker '''
         return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the depreciation rate of the circuit breaker '''
-        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
@@ -732,33 +561,17 @@ class Site(object):
         ''' Return the number of transformers within the site '''
         return self.transformerNum
 
-    def setTransformerNum(self):
-        ''' Set the number of transformers within the site '''
-        self.transformerNum = transformerNum
-
     def getArrayNum(self):
         ''' Return the number of arrays within the site '''
         return self.arrayNum
-
-    def setArrayNum(self, arrayNum):
-        ''' Set the number of arrays within the site '''
-        self.arrayNum = arrayNum
 
     def getCircuitBreakerNum(self):
         ''' Return the number of circuit breakers within the site '''
         return self.circuitBreakerNum
 
-    def setCircuitBreakerNum(self, circuitBreakerNum):
-        ''' Set the number of circuit beakers within the site '''
-        self.circuitBreakerNum = circuitBreakerNum
-
     def getInverterNum(self):
         ''' Return the number of inverters '''
         return self.inverterNum
-
-    def setInverterNum(self, inverterNum):
-        ''' Set the number of inverters '''
-        self.inverterNum = inverterNum
 
     def getLatitude(self):
         ''' Return the site latitude '''
@@ -777,17 +590,9 @@ class Site(object):
         ''' Return the land price of the solar farm '''
         return self.landPrice
 
-    def setLandPrice(self, landPrice):
-        ''' Set the land price of the solar farm '''
-        self.landPrice = landPrice
-
     def getLandAppRate(self):
         ''' Return the land appreciation rate '''
         return self.landAppRate
-
-    def setLandAppRate(self):
-        ''' Set the land appreciation rate '''
-        self.landAppRate = landAppRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # MISC FINANCIAL
@@ -814,41 +619,21 @@ class Financial(object):
         ''' Return the maintenance budget per year '''
         return self.maintenance
 
-    def setMaintenance(self, maintenance):
-        ''' Set the maintenance budget per year '''
-        self.maintenance = maintenance
-
     def getLabour(self):
         ''' Return the labour costs '''
         return self.labour
-
-    def setLabour(self, labour):
-        ''' Set the  labour costs '''
-        self.labour = labour
 
     def getCapital(self):
         ''' Return the capital costs '''
         return self.capital
 
-    def setCapital(self, capital):
-        ''' Set the capital costs '''
-        self.capital = capital
-
     def getDepRate(self):
         ''' Return the depreciation rate '''
         return self.depRate
 
-    def setDepRate(self, depRate):
-        ''' Set the depreciation rate '''
-        self.depRate = depRate
-
     def getSelling(self):
         ''' Return the selling rate of power '''
         return self.selling
-
-    def setSelling(self, selling):
-        ''' Set the selling rate of power '''
-        self.selling = selling
 
 # -------------------------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
