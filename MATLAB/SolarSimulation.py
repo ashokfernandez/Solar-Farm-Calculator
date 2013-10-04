@@ -353,7 +353,8 @@ AC1Cost = 100 # Cost of cable per meter
 AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
 
 class AC1Cable(object):
-    ''' Class that stores the information relating to the AC cable between the inverter and the transformer '''
+    ''' Class that stores the information relating to the AC cable
+    between the inverter and the transformer '''
     def __init__(self, diameter, material, length):
         ''' Initialise the AC cable object '''
         self.diameter = diameter
@@ -727,13 +728,13 @@ if findPayBack == 0:
 else:
     simLength = 50 * 365
 
-class GMT(datetime):
+class GMT(object):
     '''docstring for GMT'''
     def __init__(self, start, finish):
-        ''' The start and finish variables are tuples containing the year, month and day (in that order) '''
-        self.start = date(start[0], start[1], start[2])
-        self.finish = date(finish[0], finish[1], finish[2])
-        self.days = start - finish
+        ''' '''
+        self.start = start
+        self.finish = finish
+        self.days = (start - finish).days
         self.dates = [self.start - datetime.timedelta(days=self.days) for self.days in range(0,numdays)]
 
     def getStartDate(self):
@@ -747,7 +748,22 @@ class GMT(datetime):
 
     def setFinishDate(self, date):
         self.finish = date
+
+    def dateToIndex(date):
+        ''' Returns the index of the day and the month of the datetime object given.
+        The returned value is a tuple in the form (day, month) where the day is an integer
+        between 0 and 364 and month is an integer 0 - 11 so they can be used an an array index'''
+        # Get the date of the first day of the year
+        startOfYear = datetime.date(date.year, 1, 1)
         
+        # Calculate the day of the year as a value between 0 and 364
+        dayOfYear = date - startOfYear
+        dayOfYear = dayOfYear.days
+        
+        # Get the month of the year as an array index
+        month = date.month - 1
+
+        return (dayOfYear, month)
 
 # -------------------------------------------------------------------------------------------------------------------
 
