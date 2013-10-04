@@ -290,11 +290,14 @@ DCDepRate = 6 # DC cable depreciation rate (# per year)
 
 class DCCable(object):
     ''' Class to store the information relating to the DC cable between the PV array and the inverter '''
-    def __init__(self, diameter, material, length):
+    def __init__(self, diameter, material, length, costPerMeter, depRate):
         ''' Initialise a DC cable object '''
-        self.diameter = diameter    # Diameter of the cable (mm)
-        self.material = material    # Material of the conductor within the cable (e.g. Cu, Al)
-        self.length = length        # Length of the total amount of cable
+        self.diameter = diameter            # Diameter of the cable (mm)
+        self.material = material            # Material of the conductor within the cable (e.g. Cu, Al)
+        self.length = length                # Length of the total amount of cable
+
+        self.costPerMeter = costPerMeter    # Cost per meter (currency/m)
+        self.depRate = depRate              # Asset depreciation rate (%/year)
 
     def getDiameter(self):
         ''' Return the cable diameter '''
@@ -320,6 +323,26 @@ class DCCable(object):
         ''' Set the length of the cable '''
         self.length = length
 
+    def getCostPerMeter(self):
+        ''' Return the cost of the DC cable '''
+        return self.cost
+
+    def setCostPerMeter(self, costPerMeter):
+        ''' Set the cost per meter of cable '''
+        self.costPerMeter = costPerMeter
+
+    def getCost(self):
+        ''' Return the total cost of cable '''
+        return self.costPerMeter * self.length
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the cable '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset depreciation rate of the cable '''
+        self.depRate = depRate
+
 # -------------------------------------------------------------------------------------------------------------------
 # INVERTER
 # -------------------------------------------------------------------------------------------------------------------
@@ -341,8 +364,8 @@ class Inverter(object):
         self.efficiency = efficiency    # Efficiency of the inverter
         self.voltage = voltage          # Output voltage of the inverter to the transformer
 
-        self.cost = cost
-        self.depRate = depRate
+        self.cost = cost                # Unit cost of the inverter (currency/unit)
+        self.depRate = depRate          # Asset depreciation rate (%/year)
 
     def getPowerFactor(self):
         ''' Return the power factor '''
@@ -368,6 +391,22 @@ class Inverter(object):
         ''' Set the output voltage of the inverter '''
         self.voltage = voltage
 
+    def getCost(self):
+        ''' Return the unit cost of the inverter '''
+        return self.cost
+
+    def setCost(self, cost):
+        ''' Set the unit cost of the inverter '''
+        self.cost = cost
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the inverter '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset depreciation rate of the inverter '''
+        self.depRate = depRate
+
 # -------------------------------------------------------------------------------------------------------------------
 # Inv-Tx Lines (AC1 Cables)
 # -------------------------------------------------------------------------------------------------------------------
@@ -384,11 +423,14 @@ AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
 class AC1Cable(object):
     ''' Class that stores the information relating to the AC cable
     between the inverter and the transformer '''
-    def __init__(self, diameter, material, length):
+    def __init__(self, diameter, material, length, costPerMeter, depRate):
         ''' Initialise the AC cable object '''
         self.diameter = diameter
         self.material = material
         self.length = length
+
+        self.getCostPerMeter = costPerMeter
+        self.depRate = depRate
 
     def getDiameter(self):
         ''' Return the cable diameter '''
@@ -414,6 +456,26 @@ class AC1Cable(object):
         ''' Set the length of the cable '''
         self.length = length
 
+    def getCostPerMeter(self):
+        ''' Return the cost per meter of the cable '''
+        return self.costPerMeter
+
+    def setCostPerMeter(self, costPerMeter):
+        ''' Set the cost per meter of the cable '''
+        self.costPerMeter = costPerMeter
+
+    def getCost(self):
+        ''' Return the total cost of the cable '''
+        return self.costPerMeter * self.length
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the cable '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset depreciation rate of the cable '''
+        self.depRate = depRate
+
 # -------------------------------------------------------------------------------------------------------------------
 # TRANSFORMER
 # -------------------------------------------------------------------------------------------------------------------
@@ -435,6 +497,9 @@ class Transformer(object):
         self.voltage = voltage
         self.efficiency = efficiency
         self.VARating = VARating
+
+        # Financial properties
+        self
 
     def getVoltage(self):
         ''' Return the high voltage side of the transformer '''
@@ -459,6 +524,8 @@ class Transformer(object):
     def setVARating(self, VARating):
         ''' Set the rating of the transformer (MVA) '''
         self.VARating = VARating
+
+
 
 # -------------------------------------------------------------------------------------------------------------------
 # GEP LINES
@@ -901,7 +968,7 @@ class GMT(object):
     
 #     energyOutput[i] = AC2Output[i] * sunlightHours[day] # Daily output in Wh
     
-#     #-------------Finicial-----------------------------------------------#
+#     #-------------Financial-----------------------------------------------#
 #     # if day == startDay and i != 1:
 #     #     # Calculate finicial data
 #     #     year = year + 1
