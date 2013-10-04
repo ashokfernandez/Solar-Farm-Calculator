@@ -17,7 +17,10 @@ import numpy
 import time
 from datetime import *
 
-#start = time.time()
+# For the progress bar in the console when the scraping operation is happening
+from time import sleep
+import progressbar # https://pypi.python.org/pypi/progressbar/
+
 
 def calcTransmissionLength(site, GEP):
     ''' Calculates the distance between the solar farm site and the grid entry point (GEP) '''
@@ -70,7 +73,6 @@ def calcOptimumAngle(directIrr, site):
 
     return opAngle
 
-
 def calcCableResistance(cable, temperature):
     ''' Calculates the resistance of a cable given the cable material, ambient temperature, diameter and length. '''
 
@@ -87,16 +89,15 @@ def calcCableResistance(cable, temperature):
 # SOLAR PANELS
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-panelVoltage = 30.5 # Voltage of the panel at maximum power point
-panelEff = 0.15 # Solar panel efficiency (typically 15-18 #)
-panelDegRate = 0.4 # Rate at which the solar panel degradates (# per year)
-panelArea = 1.63 # Panel area (m^2)
+# # Deprecated variables
+# panelVoltage = 30.5 # Voltage of the panel at maximum power point
+# panelEff = 0.15 # Solar panel efficiency (typically 15-18 #)
+# panelDegRate = 0.4 # Rate at which the solar panel degradates (# per year)
+# panelArea = 1.63 # Panel area (m^2)
 
-
-# Financial
-panelCost = 50 # Cost of the single panel
-panelDepRate = 20 # Panel depreciation rate (% per year)
+# # Financial
+# panelCost = 50 # Cost of the single panel
+# panelDepRate = 20 # Panel depreciation rate (% per year)
 
 
 class PVPanel(object):
@@ -163,9 +164,9 @@ class PVPanel(object):
 # SOLAR MODULE
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-moduleNum = 20 # Number of solar panels in a module
-solarVoltage = panelVoltage * moduleNum
+# # Deprecated variables
+# moduleNum = 20 # Number of solar panels in a module
+# solarVoltage = panelVoltage * moduleNum
 
 class PVModule(object):
     ''' Class to store information relating to a solar PV module. A module contains PV panels '''
@@ -198,14 +199,18 @@ class PVModule(object):
         ''' Return the module voltage '''
         return self.voltage
 
+    def getArea(self):
+        ''' Return total panel area of a module '''
+        return self.panelType.getArea() * self.panelNum
+
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR ARRAY
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-arrayModuleNum = 7 # Number of modules that make up an array (modlues are in parrallel)
-arrayAngle = 45 # Angle from panel to horizontal
-useOptimumAngle = 1
+# # Deprecated variables
+# arrayModuleNum = 7 # Number of modules that make up an array (modlues are in parrallel)
+# arrayAngle = 45 # Angle from panel to horizontal
+# useOptimumAngle = 1
 
 class PVArray(object):
     ''' Class to store the information relating to a PV array. An array contains PV modules '''
@@ -215,7 +220,7 @@ class PVArray(object):
         self.moduleNum = moduleNum      # Number of modules in the array in parallel connection
         self.angle = arrayAngle         # Angle of the PV panels
         self.voltage = None             # Array voltage
-        self.__CalculateArrayVoltage
+        self.__CalculateArrayVoltage()
 
     def __CalculateArrayVoltage(self):
         ''' Calculates the total voltage of the PV array '''
@@ -249,6 +254,10 @@ class PVArray(object):
     def setAngle(self, angle):
         ''' Set the angle of the panels within the array '''
         self.angle = angle
+
+    def getArrayArea(self):
+        '''Calculates the total area of the panels in m^2'''
+        return self.moduleType.getArea() * self.moduleNum
 # -------------------------------------------------------------------------------------------------------------------
 # MATERIAL
 # -------------------------------------------------------------------------------------------------------------------
@@ -281,14 +290,14 @@ class Material(object):
 # DC CABLE
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-DCdiameter = 20 # DC cable diameter in mm
-DCcableMaterial = 'Cu' # DC cable conductor material
-DCcableLength = 100 # DC cable length in meters
+# # Deprecated variables
+# DCdiameter = 20 # DC cable diameter in mm
+# DCcableMaterial = 'Cu' # DC cable conductor material
+# DCcableLength = 100 # DC cable length in meters
 
-# Financial
-DCcostPerMeter = 100 # Cost of DC cable per meter
-DCDepRate = 6 # DC cable depreciation rate (# per year)
+# # Financial
+# DCcostPerMeter = 100 # Cost of DC cable per meter
+# DCDepRate = 6 # DC cable depreciation rate (# per year)
 
 class DCCable(object):
     ''' Class to store the information relating to the DC cable between the PV array and the inverter '''
@@ -326,14 +335,14 @@ class DCCable(object):
 # INVERTER
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-InvPowerFactor = 0.95 # Power factor of the output of the inverter
-InvEff = 0.85 # Inverter effeciency (typicall loss 4-15 #)
-InvOutVolt = 400 # Output voltage of the inverter (line to line)
+# # Deprecated variables
+# InvPowerFactor = 0.95 # Power factor of the output of the inverter
+# InvEff = 0.85 # Inverter effeciency (typicall loss 4-15 #)
+# InvOutVolt = 400 # Output voltage of the inverter (line to line)
 
-# # Financial
-InvCost = 10000 # Cost of the inverter/s
-InvDepRate = 7 # Inverter depreciation rate (# per year)
+# # # Financial
+# InvCost = 10000 # Cost of the inverter/s
+# InvDepRate = 7 # Inverter depreciation rate (# per year)
 
 class Inverter(object):
     ''' Class to store the information relating to the Inverter '''
@@ -374,14 +383,14 @@ class Inverter(object):
 # Inv-Tx Lines (AC1 Cables)
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-AC1Diameter = 6 # Inv-Tx line cable diameter
-AC1Material = 'Al' # Inv-Tx cable material
-AC1Length = 100 # Length of the Inv-Tx cable
+# # Deprecated variables
+# AC1Diameter = 6 # Inv-Tx line cable diameter
+# AC1Material = 'Al' # Inv-Tx cable material
+# AC1Length = 100 # Length of the Inv-Tx cable
 
-# Financial
-AC1Cost = 100 # Cost of cable per meter
-AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
+# # Financial
+# AC1Cost = 100 # Cost of cable per meter
+# AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
 
 class AC1Cable(object):
     ''' Class that stores the information relating to the AC cable
@@ -421,14 +430,14 @@ class AC1Cable(object):
 # -------------------------------------------------------------------------------------------------------------------
 
 # Deprecated variables
-TxOutVolt = 11e3 # Transformer secondary voltage
-TxEff = 0.95 # Transformer efficiency
-TxRating = 3 # MVA rating
+# TxOutVolt = 11e3 # Transformer secondary voltage
+# TxEff = 0.95 # Transformer efficiency
+# TxRating = 3 # MVA rating
 
-# Financial
-TxCost = 1000000 # Cost of the transformer
-TxDepRate = 6 # Transformer depreciation rate (# per year)
-TxScrap = 30000 # Transformer scrap value
+# # Financial
+# TxCost = 1000000 # Cost of the transformer
+# TxDepRate = 6 # Transformer depreciation rate (# per year)
+# TxScrap = 30000 # Transformer scrap value
 
 class Transformer(object):
     ''' Class that stores the information relating to a transformer '''
@@ -466,17 +475,17 @@ class Transformer(object):
 # GEP LINES
 # -------------------------------------------------------------------------------------------------------------------
 
-# Deprecated variables
-AC2StrandNum = 5 # Number of strands in ACC or ACSR cable
-AC2StrandDiameter = 2 # Strand diameter in mm
-AC2Material = 'Al' # Strand material
-specifyLength = 0
-AC2Length = 0
+# # Deprecated variables
+# AC2StrandNum = 5 # Number of strands in ACC or ACSR cable
+# AC2StrandDiameter = 2 # Strand diameter in mm
+# AC2Material = 'Al' # Strand material
+# specifyLength = 0
+# AC2Length = 0
 
-# Financial
-AC2Cost = 100 # Cost of SINGLE cable per meter
-TranLineCost = 1000 # Cost of building the transmission line per kilometer
-AC2DepRate = 6 # Depreciation rate of the GXP line (# per year)
+# # Financial
+# AC2Cost = 100 # Cost of SINGLE cable per meter
+# TranLineCost = 1000 # Cost of building the transmission line per kilometer
+# AC2DepRate = 6 # Depreciation rate of the GXP line (# per year)
 
 class GEPLine(object):
     ''' Class that stores the information relating the transmission line between the solar farm and the grid entry
@@ -543,34 +552,34 @@ class GEPLine(object):
 # -------------------------------------------------------------------------------------------------------------------
 
 # Deprecated variables
-numTx = 3 # Number of transfromers
-numArrays = 30 # Number of solar arrays
-numCircuitBreakers = 15 # Number of circuit breakers
-numInverters = 10 # Number of inverters
+# numTx = 3 # Number of transfromers
+# numArrays = 30 # Number of solar arrays
+# numCircuitBreakers = 15 # Number of circuit breakers
+# numInverters = 10 # Number of inverters
 
-siteLat = 27.67 # Site latitude
-siteLon = 85.42 # Site longitude
-GXPLat = 27.70 # GXP latitude
-GXPLon = 85.32 # GXP longitude
+# siteLat = 27.67 # Site latitude
+# siteLon = 85.42 # Site longitude
+# GXPLat = 27.70 # GXP latitude
+# GXPLon = 85.32 # GXP longitude
 
-temp = []
-irradiance = [] # Average solar irradiance perpendicular to the ground in W/m^2
-sunlightHours = [] # Number of sunlight hours per day (could turn into a function)
+# temp = []
+# irradiance = [] # Average solar irradiance perpendicular to the ground in W/m^2
+# sunlightHours = [] # Number of sunlight hours per day (could turn into a function)
 
-# see pysolar for irradiance and temperature
-for i in range(365):
-    temp.append((-0.0005 * i**2) + (0.2138 * i) + 2.1976)
-    irradiance.append((-0.021* i**2) + (8.5246 * i) + 74.471) # Formula calculated from data in source
-    sunlightHours.append((-5e-11 * i**5) + (4e-8 * i**4) + (-1e-5 * i**3) + (6e-4 * i**2) + (2.99e-2 * i) + 6.0658)
+# # see pysolar for irradiance and temperature
+# for i in range(365):
+#     temp.append((-0.0005 * i**2) + (0.2138 * i) + 2.1976)
+#     irradiance.append((-0.021* i**2) + (8.5246 * i) + 74.471) # Formula calculated from data in source
+#     sunlightHours.append((-5e-11 * i**5) + (4e-8 * i**4) + (-1e-5 * i**3) + (6e-4 * i**2) + (2.99e-2 * i) + 6.0658)
 
 
-siteArea = 1 # Site area in km^2
+# siteArea = 1 # Site area in km^2
 
-# Financial
-breakerCost = 10000 # Cost of each circuit breakers
-breakerDepRate = 6 # Circuit breaker depreciation rate (# per year)
-landPrice = 100000 # Cost per km^2 of land
-landAppRate = 3 # Land appreciation rate (# per year)
+# # Financial
+# breakerCost = 10000 # Cost of each circuit breakers
+# breakerDepRate = 6 # Circuit breaker depreciation rate (# per year)
+# landPrice = 100000 # Cost per km^2 of land
+# landAppRate = 3 # Land appreciation rate (# per year)
 
 class CircuitBreaker(object):
     ''' Class for storing information relating to a  circuit breaker '''
@@ -597,32 +606,19 @@ class CircuitBreaker(object):
 
 class Site(object):
     ''' Class that stores the information relating to the solar farm site '''
-    def __init__(self, transformer, transformerNum, array, arrayNum, circuitBreaker, circuitBreakerNum, inverter,
-        inverterNum, latitude, longitude, temperature, irradiance, sunlightHours, landPrice, landAppRate):
+    def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, 
+                 latitude, longitude, temperature, landPrice, landAppRate):
         ''' Initialise the solar farm site object '''
-        self.transformer = transformer
         self.transformerNum = transformerNum
-        self.array = array
         self.arrayNum = arrayNum
-        self.circuitBreaker = circuitBreaker
         self.circuitBreakerNum = circuitBreakerNum
-        self.inverter = inverter
         self.inverterNum = inverterNum
         self.latitude = latitude
         self.longitude = longitude
         self.temperature = temperature
-        self.irradiance = irradiance
-        self.sunlightHours = sunlightHours
         self.landPrice = landPrice
         self.landAppRate = landAppRate
 
-    def getTransformer(self):
-        ''' Return the transformer used within the site '''
-        return self.transformer
-
-    def setTransformer(self, transformer):
-        ''' Set the transformer type used within the site '''
-        self.transformer = transformer
 
     def getTransformerNum(self):
         ''' Return the number of transformers within the site '''
@@ -632,14 +628,6 @@ class Site(object):
         ''' Set the number of transformers within the site '''
         self.transformerNum = transformerNum
 
-    def getArray(self):
-        ''' Return the array type used within the site '''
-        return self.array
-
-    def setArray(self, array):
-        ''' Set the array type used within the site '''
-        self.array = array
-
     def getArrayNum(self, array):
         ''' Return the number of arrays within the site '''
         return self.arrayNum
@@ -648,14 +636,6 @@ class Site(object):
         ''' Set the number of arrays within the site '''
         self.arrayNum = arrayNum
 
-    def getCircuitBreaker(self):
-        ''' Return the circuit breaker type '''
-        self.circuitBreaker
-
-    def setCircuitBreaker(self, circuitBreaker):
-        ''' Set the circuit breaker type '''
-        self.circuitBreaker = circuitBreaker
-
     def getCircuitBreakerNum(self):
         ''' Return the number of circuit breakers within the site '''
         return self.circuitBreakerNum
@@ -663,14 +643,6 @@ class Site(object):
     def setCircuitBreakerNum(self, circuitBreakerNum):
         ''' Set the number of circuit beakers within the site '''
         self.circuitBreakerNum = circuitBreakerNum
-
-    def getInverter(self):
-        ''' Return the inverter type '''
-        return self.Inverter
-
-    def setInverter(self, inverter):
-        ''' Set the inverter type '''
-        self.Inverter = inverter
 
     def getInverterNum(self):
         ''' Return the number of inverters '''
@@ -696,40 +668,17 @@ class Site(object):
         ''' Set the longitude of the site '''
         self.longitude = longitude
 
-    def getTemperature(self):
-        ''' Return the temperature of the site '''
-        return self.temperature
-
-    def setTemperature(self, temperature):
-        ''' Set the temperature of the site '''
-        self.temperature = temperature
-
-    def getIrradiance(self):
-        ''' Return the irradiance of the site '''
-        return self.irradiance
-
-    def setIrradiance(self, irradiance):
-        ''' Set the irradiance of the site '''
-        self.irradiance = irradiance
-
-    def getSunlightHours(self):
-        ''' Return the sunlight hours of the site '''
-        return self.sunlightHours
-
-    def setSunlightHours(self, sunlightHours):
-        ''' Set the sunlight hours of the site '''
-        self.sunlightHours = sunlightHours
 
 # -------------------------------------------------------------------------------------------------------------------
 # MISC FINANCIAL
 # -------------------------------------------------------------------------------------------------------------------
 
 # Deprecated variables
-maintainceBudget = 100000 # Maintaince budget per year
-labourCosts = 500000      # Intial labour costs to build site
-miscCapitalCosts = 500000 # Misc initial capital costs
-miscDepRate = 8           # Misc depreciation rate (# per year)
-buyBackRate = 0.25        # Selling rate of power ($/kWh)
+# maintainceBudget = 100000 # Maintaince budget per year
+# labourCosts = 500000      # Intial labour costs to build site
+# miscCapitalCosts = 500000 # Misc initial capital costs
+# miscDepRate = 8           # Misc depreciation rate (# per year)
+# buyBackRate = 0.25        # Selling rate of power ($/kWh)
 
 # -------------------------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
@@ -747,7 +696,7 @@ buyBackRate = 0.25        # Selling rate of power ($/kWh)
 
 # months = {'January' : 0, 'February' : 28, 'March' : 59, 'April': 89, 'May': 120, 
 #           'June' : 150 , 'July': 181, 'August': 212, 'September': 242, 'October': 273, 
-          'November':303, 'December':334}
+          # 'November':303, 'December':334}
 
 # beginDay = startDay + months[startMonth] #daysMonths(bindex);
 
@@ -756,11 +705,159 @@ buyBackRate = 0.25        # Selling rate of power ($/kWh)
 # else:
 #     simLength = 50 * 365
 
+class thread_SimulateDay(threading.Thread):
+    def __init__(self, inputQueue, outputQueue, timestep_mins):
+        ''' Takes an input of SimulationDay objects, runs the simulation for that day and stores the result
+        inside the SimulationDay object before pushing it to the output queue'''
+        self.timestep_mins
+        self.inputQueue = inputQueue
+        self.outputQueue = outputQueue
+    
+    def run(self):
+        while True:
+            # Check if there are any more days to simulate
+            if self.inputQueue.empty():
+                return
+            
+            # TODO: Add simulation parameters
+            # solarVoltage = PVArray.getVoltage() 
+            # totalArea = Site.getArrayNum() * PVArray.getArea()
+            # panelEff = PVPanel.getEffceient
+            # 
+            # temperature = site.getTemperature(month)
+            # DCcableMaterial DCCable.getMaterial(), 
+            # DCdiameter, 
+            # DCcableLength, 
+            # InvEff,
+            # TxEff
+            # AC1Material, 
+            # AC1Diameter, 
+            # AC1Length, 
+            # InvPowerFactor
+            # InvOutVolt
+            # AC2Material, 
+            # AC2StrandDiameter, 
+            # AC2Length, 
+            # AC2StrandNum, 
+            # TxOutVolt
+            # lat 
+            # lng
+
+            # Date to simulate irradiance
+            simulationDay = self.inputQueue.get()
+            year = simulationDay.date.year
+            month = simulationDay.date.month
+            day = simulationDay.date.day
+
+            # Time steps
+            SIMULATION_TIMESTEP_MINS = self.timestep_mins
+            MINS_PER_DAY = 1440.00 #             Make it a float so it divides nicely
+            STEPS_PER_DAY = int(MINS_PER_DAY / SIMULATION_TIMESTEP_MINS)
+
+            # Running totals for the total output energy effciencies at each timestep
+            energyOutput = 0
+            totalEffeciency = 0
+            elecEff = 0
+
+            # Simulate the irradiance over a day in half hour increments
+            for i in range(STEPS_PER_DAY):
+
+                # Create a datetime to represent the time of day on the given date
+                minutesIntoDay = i * SIMULATION_TIMESTEP_MINS
+                d = datetime.datetime(year, month, day) + datetime.timedelta(minutes=minutesIntoDay)
+
+                # Get the sun altitude and irrandiance for the day using Pysolar
+                altitude = Pysolar.GetAltitude(lat, lng, d)
+                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
+
+                # Calculates the solar power in W for a whole day
+                solarOutput = irradiance * totalArea * panelEff  # TODO: DEGREDATION RATE (1 - panelDegRate / (100*365) * i)
+        
+                # DC cable calcs
+                DCresistance = calc_resistance(DCcableMaterial, temperature, DCdiameter, DCcableLength)
+                DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage
+                DCloss = 2 * DCcurrent**2 * DCresistance
+                DCoutput = solarOutput - DCloss
+            
+                # Inverter calcs
+                invOutput = DCoutput * InvEff
+
+                # 3 Phase AC Cables to Tx calcs
+                AC1resistance = calc_resistance(AC1Material, temperature, AC1Diameter, AC1Length)
+                IAC1 = invOutput / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
+                AC1loss = 3 * IAC1**2 * AC1resistance
+                AC1Output = invOutput - AC1loss
+                
+                # Transformer calcs
+                TxOut = AC1Output * TxEff                
+
+                # 3 Phase tranmission lines to GXP calcs
+                strandResistance = calc_resistance(AC2Material, temperature, AC2StrandDiameter, AC2Length)
+                totalResistance = strandResistance / AC2StrandNum
+                IAC2 = TxOut / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
+                AC2loss = 3 * IAC2**2 * totalResistance
+                AC2Output = TxOut - AC2loss
+                
+                # Final outputs
+                totalEffeciency += (AC2Output / (irradiance * totalArea)) * 100
+                elecEff += (AC2Output / solarOutput) * 100
+                energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
+
+
+            # Average the effciencies over the day
+            totalEffeciency /= STEPS_PER_DAY
+            elecEff /= STEPS_PER_DAY
+            
+            # Save the output data to the SimulationDay object
+            simulationDay.electricalEffciency = elecEff
+            simulationDay.totalEffeciency = totalEffeciency
+            simulationDay.electricalEnergy = energyOutput
+
+            # Push the completed simulation day to the output queue and tick it off the input queue
+            self.outputQueue.put(simulationDay)
+            self.inputQueue.task_done()
+
 class SimulationDay(object):
     ''' Contains a date object with a day to simulate, as well as the output data from the simulation'''
-    def __init__(self, date):
+    def __init__(self, date, simulationParameters):
+        
+        # Date to simulate and the parameters of the simulation
         self.date = date
-        self.outputData = []
+        self.simulationParameters = simulationParameters
+    
+        # Outputs are stored here
+        self.electricalEnergy = 0
+        self.electricalEffciency = 0
+        self.totalEffciency = 0
+
+
+    def setElectricalEnergy(self, electricalEnergy):
+        ''' Sets the electrical energy from the simulation '''
+        self.electricalEnergy = electricalEnergy
+
+    def getElectricalEnergy(self):
+        ''' Gets the electrical energy from the simulation '''
+        return self.electricalEnergy
+
+    def setElectricalEffciency(self, electricalEffciency):
+        ''' Sets the average electrical effciency from the day simulated, that is the 
+        effciency between the output of the solar panels and the grid connection point '''
+        self.electricalEffciency = electricalEffciency
+
+    def getElectricalEffciency(self):
+        ''' Gets the average electrical effciency from the day simulated, that is the 
+        effciency between the output of the solar panels and the grid connection point '''
+        return self.electricalEffciency
+
+    def setTotalEffciency(self, totalEffciency):
+        ''' Sets the average total effciency from the day simulated, that is the 
+        effciency between the solar energy in and the energy out at the grid connection point'''
+        self.totalEffciency = totalEffciency
+
+    def getTotalEffciency(self):
+        ''' Gets the average total effciency from the day simulated, that is the 
+        effciency between the solar energy in and the energy out at the grid connection point'''
+        return self.totalEffciency
 
     # def dateToIndex(date):
     #     ''' Returns the index of the day and the month of the datetime object given.
@@ -780,12 +877,32 @@ class SimulationDay(object):
 
 class Simulation(object):
     '''Object to contain the simulation parameters'''
-    def __init__(self, start, finish, numThreads=5):
-        ''' '''
+    def __init__(self, start, finish, PVPanel, PVModule, PVArray, Material, DCCable, 
+                 Inverter, AC1Cable, Transformer, GEPLine, CircuitBreaker, Site, 
+                 numThreads=5, simulationTimestepMins=30):
+        '''Initilise the simulation'''
         self.start = start
         self.finish = finish
         self.days = (start - finish).days
         self.numThreads = numThreads
+        self.simulationTimestepMins = simulationTimestepMins
+
+        # Simulation parameters
+        self.parameters = {
+            'start': start,
+            'finish': finish,
+            'PVPanel' : PVPanel,
+            'PVModule': PVModule, 
+            'PVArray' : PVArray,
+            'Material': Material, 
+            'DCCable' : DCCable, 
+            'Inverter': Inverter,
+            'AC1Cable': AC1Cable, 
+            'Transformer': Transformer, 
+            'GEPLine': GEPLine, 
+            'CircuitBreaker': CircuitBreaker, 
+            'Site': Site
+        }
         
         # Queues to store the input and output to the simulation
         self.inputDays = Queue.Queue()
@@ -810,7 +927,33 @@ class Simulation(object):
     def setFinishDate(self, date):
         self.finish = date
 
+    def run(self):
+        ''' Runs the simulation'''
 
+        numberOfSimulationDays = self.inputQueue.qsize()
+
+        # Spawn the threads
+        for i in range(NUMBER_OF_THREADS):
+            simulationThread = thread_SimulateDay(self.inputQueue, self.outputQueue, self.simulationTimestepMins)
+            simulationThread.setDaemon(True)
+            simulationThread.start()
+        
+        # Create a progress bar
+        widgets = ['Running Simulation: ', progressbar.Percentage(), ' ', 
+                   progressbar.Bar(), ' ', progressbar.ETA()]
+        bar = progressbar.ProgressBar(maxval=numberOfSimulationDays, widgets=widgets)
+        bar.start()
+
+        # While the amount of output objects is less than the amount of input objects, update the progress bar
+        completedSimulations = 0
+        while(completedSimulations < numberOfSimulationDays):
+            # Stops the console from being updated unecesseraly
+            sleep(0.25)
+            completedSimulations = (numberOfSimulationDays - queue_inputGames.qsize())
+            bar.update(completedSimulations)
+
+        # Finish up the progress bar
+        bar.finish()
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -866,123 +1009,36 @@ class Simulation(object):
 
 
 
-class CalculateDay(threading.Thread):
+
+
+
+
+
+#-------------Finicial-----------------------------------------------#
+# if day == startDay and i != 1:
+#     # Calculate finicial data
+#     year = year + 1
+#     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
+#     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
+#     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
+#     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
+#     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
     
-    def __init__(self, inputQueue, outputQueue):
-        ''' Takes an input of SimulationDay objects, runs the simulation for that day and stores the result
-        inside the SimulationDay object before pushing it to the output queue'''
-        self.inputQueue = inputQueue
-        self.outputQueue = outputQueue
+#     expenses = maintainceBudget*year + labourCosts
+#     totalIncome = sum(energyOutput)/1000*buyBackRate
     
-    def run(self):
-        while True:
-            # Check if there are any more days to simulate
-            if self.inputQueue.empty()
-                return
+#     if (totalIncome > (expenses + capitalWorth(1)))
+#         break
+    
 
-            
-            # TODO: Add simulation parameters
-            # solarVoltage = 0, totalArea panelEff
-            # temperature = 0
-            # DCcableMaterial, DCdiameter, DCcableLength, InvEff,TxEff
-            # AC1Material, AC1Diameter, AC1Length, InvPowerFactor*InvOutVolt
-            # AC2Material, AC2StrandDiameter, AC2Length, AC2StrandNum, TxOutVolt
-            lat = 1
-            lng = 1
+# elif i == 1:
+#     # Initial Capital Worth
+#     capitalWorth[year + 1] = landPrice*siteArea + panelCost*numPanels
+#     capitalWorth += DCcostPerMeter*DCcableLength + InvCost*numInverters
+#     capitalWorth += AC1Cost*AC1Length + TxCost + (AC2Cost + TranLineCost)*AC2Length
+#     capitalWorth += miscCapitalCosts
 
-            # Date to simulate irradiance
-            simulationDay = self.inputQueue.get()
-            year = simulationDay.date.year
-            month = simulationDay.date.month
-            day = simulationDay.date.day
-
-            # Constants
-            SIMULATION_TIMESTEP_MINS = 30
-            MINS_PER_DAY = 1440.00 #      Make it a float so it divides nicely
-            STEPS_PER_DAY = int(MINS_PER_DAY / SIMULATION_TIMESTEP_MINS)
-
-            # Running totals for the total output energy effciencies at each timestep
-            energyOutput = 0
-            totalEffeciency = 0
-            elecEff = 0
-
-            # Simulate the irradiance over a day in half hour increments
-            for i in range(STEPS_PER_DAY):        
-                # Create a datetime to represent the time of day on the given date
-                minutesIntoDay = i * SIMULATION_TIMESTEP_MINS
-                d = datetime.datetime(year, month, day) + datetime.timedelta(minutes=minutesIntoDay)
-
-                # Get the sun altitude and irrandiance for the day using Pysolar
-                altitude = Pysolar.GetAltitude(lat, lng, d)
-                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
-
-                # Calculates the solar power in W for a whole day
-                solarOutput = irradiance * totalArea * panelEff  # TODO: DEGREDATION RATE (1 - panelDegRate / (100*365) * i)
-        
-                # DC cable calcs
-                DCresistance = calc_resistance(DCcableMaterial, temperature, DCdiameter, DCcableLength)
-                DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage
-                DCloss = 2 * DCcurrent**2 * DCresistance
-                DCoutput = solarOutput - DCloss
-            
-                # Inverter calcs
-                invOutput = DCoutput * InvEff
-
-                # 3 Phase AC Cables to Tx calcs
-                AC1resistance = calc_resistance(AC1Material, temperature, AC1Diameter, AC1Length)
-                IAC1 = invOutput / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
-                AC1loss = 3 * IAC1**2 * AC1resistance
-                AC1Output = invOutput - AC1loss
-                
-
-                # Transformer calcs
-                TxOut = AC1Output * TxEff
-                
-
-                # 3 Phase tranmission lines to GXP calcs
-                strandResistance = calc_resistance(AC2Material, temperature, AC2StrandDiameter, AC2Length)
-                totalResistance = strandResistance / AC2StrandNum
-                IAC2 = TxOut / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
-                AC2loss = 3 * IAC2**2 * totalResistance
-                AC2Output = TxOut - AC2loss
-                
-                # Final outputs
-                totalEffeciency += (AC2Output / (irradiance * totalArea)) * 100
-                elecEff += (AC2Output / solarOutput) * 100
-                energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
-
-
-            # Average the effciencies over the day
-            totalEffeciency /= STEPS_PER_DAY
-            elecEff /= STEPS_PER_DAY
-            
-
-
-            #-------------Finicial-----------------------------------------------#
-            # if day == startDay and i != 1:
-            #     # Calculate finicial data
-            #     year = year + 1
-            #     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
-            #     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
-            #     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
-            #     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
-            #     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
-                
-            #     expenses = maintainceBudget*year + labourCosts
-            #     totalIncome = sum(energyOutput)/1000*buyBackRate
-                
-            #     if (totalIncome > (expenses + capitalWorth(1)))
-            #         break
-                
-            
-            # elif i == 1:
-            #     # Initial Capital Worth
-            #     capitalWorth[year + 1] = landPrice*siteArea + panelCost*numPanels
-            #     capitalWorth += DCcostPerMeter*DCcableLength + InvCost*numInverters
-            #     capitalWorth += AC1Cost*AC1Length + TxCost + (AC2Cost + TranLineCost)*AC2Length
-            #     capitalWorth += miscCapitalCosts
-            
-            #---------------------------------------------------------------------#
+#---------------------------------------------------------------------#
     
 
 # t = range(len(solarOutput))
