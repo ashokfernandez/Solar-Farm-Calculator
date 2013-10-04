@@ -108,6 +108,7 @@ class PVPanel(object):
         self.degradationRate = degradationRate  # Panel asset degradation rate (%)
         self.area = area                        # Panel surface area (m^2)
 
+        # Financial properties
         self.cost = cost                        # Cost (currency/unit)
         self.depRate = depRate                  # Asset deprecation rate (%)
 
@@ -298,6 +299,7 @@ class DCCable(object):
         self.material = material            # Material of the conductor within the cable (e.g. Cu, Al)
         self.length = length                # Length of the total amount of cable
 
+        # Financial properties
         self.costPerMeter = costPerMeter    # Cost per meter (currency/m)
         self.depRate = depRate              # Asset depreciation rate (%/year)
 
@@ -366,6 +368,7 @@ class Inverter(object):
         self.efficiency = efficiency    # Efficiency of the inverter
         self.voltage = voltage          # Output voltage of the inverter to the transformer
 
+        # Financial properties
         self.cost = cost                # Unit cost of the inverter (currency/unit)
         self.depRate = depRate          # Asset depreciation rate (%/year)
 
@@ -431,6 +434,7 @@ class AC1Cable(object):
         self.material = material
         self.length = length
 
+        # Financial properties
         self.getCostPerMeter = costPerMeter
         self.depRate = depRate
 
@@ -494,14 +498,16 @@ TxScrap = 30000 # Transformer scrap value
 
 class Transformer(object):
     ''' Class that stores the information relating to a transformer '''
-    def __init__(self, voltage, efficiency, VARating):
+    def __init__(self, voltage, efficiency, VARating, cost, depRate, scrap):
         ''' Initialise the transformer object '''
         self.voltage = voltage
         self.efficiency = efficiency
         self.VARating = VARating
 
         # Financial properties
-        self
+        self.cost = cost
+        self.depRate = depRate
+        self.scrap = scrap
 
     def getVoltage(self):
         ''' Return the high voltage side of the transformer '''
@@ -527,7 +533,29 @@ class Transformer(object):
         ''' Set the rating of the transformer (MVA) '''
         self.VARating = VARating
 
+    def getCost(self):
+        ''' Return the unit cost of the transformer '''
+        return self.cost
 
+    def setCost(self, cost):
+        ''' Set the unit cost of the transformer '''
+        self.cost = cost
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the transformer '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset depreciation rate of the transformer '''
+        self.depRate = depRate
+
+    def getScrap(self):
+        ''' Return the scrap value of the cable '''
+        return self.sc
+
+    def setScrap(self, scrap):
+        ''' Set the scrap value of the cable '''
+        self.scrap = scrap
 
 # -------------------------------------------------------------------------------------------------------------------
 # GEP LINES
@@ -548,7 +576,7 @@ AC2DepRate = 6 # Depreciation rate of the GXP line (# per year)
 class GEPLine(object):
     ''' Class that stores the information relating the transmission line between the solar farm and the grid entry
     point '''
-    def __init__(self, strandNum, diameter, material, length, latitude, longitude):
+    def __init__(self, strandNum, diameter, material, length, latitude, longitude, costPerMeter, depRate):
         ''' Initialise the GEP object '''
         self.strandNum = strandNum
         self.diameter = diameter
@@ -556,6 +584,10 @@ class GEPLine(object):
         self.length = length
         self.latitude = latitude
         self.longitude = longitude
+
+        # Financial properties
+        self.costPerMeter = costPerMeter
+        self.depRate = depRate
 
     def getStrandNum(self):
         ''' Return the number of strands in ACC or ACSR cable '''
@@ -605,6 +637,53 @@ class GEPLine(object):
         ''' Set the longitude of the GEP '''
         self.longitude = longitude
 
+    def getCostPerMeter(self):
+        ''' Return the cost per meter of the transmission line '''
+        return self.costPerMeter
+
+    def setCostPerMeter(self, costPerMeter):
+        ''' Set the cost per meter of the transmission line '''
+        self.costPerMeter = costPerMeter
+
+    def getCost(self):
+        ''' Return the total cost of the transmission line '''
+        return self.costPerMeter * self.length
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the transmission line '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset depreciation rate of the transmission line '''
+        self.depRate = depRate
+
+# -------------------------------------------------------------------------------------------------------------------
+# CIRCUIT BREAKER
+# -------------------------------------------------------------------------------------------------------------------
+
+class CircuitBreaker(object):
+    ''' Class for storing information relating to a  circuit breaker '''
+    def __init__(self, cost, depRate):
+        ''' Initialise the circuit breaker class object '''
+        self.cost = cost
+        self.depRate = depRate
+
+    def getCost(self):
+        ''' Return the cost of a circuit breaker '''
+        return self.cost
+
+    def setCost(self, cost):
+        ''' Set the cost of the circuit breaker '''
+        self.cost = cost
+
+    def getDepRate(self):
+        ''' Return the depreciation rate of the circuit breaker '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the depreciation rate of the circuit breaker '''
+        self.depRate = depRate
+
 # -------------------------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
 # -------------------------------------------------------------------------------------------------------------------
@@ -639,29 +718,6 @@ breakerDepRate = 6 # Circuit breaker depreciation rate (# per year)
 landPrice = 100000 # Cost per km^2 of land
 landAppRate = 3 # Land appreciation rate (# per year)
 
-class CircuitBreaker(object):
-    ''' Class for storing information relating to a  circuit breaker '''
-    def __init__(self, cost, depRate):
-        ''' Initialise the circuit breaker class object '''
-        self.cost = cost
-        self.depRate = depRate
-
-    def getCost(self):
-        ''' Return the cost of a circuit breaker '''
-        return self.cost
-
-    def setCost(self, cost):
-        ''' Set the cost of the circuit breaker '''
-        self.cost = cost
-
-    def getDepRate(self):
-        ''' Return the depreciation rate of the circuit breaker '''
-        return self.depRate
-
-    def setDepRate(self, depRate):
-        ''' Set the depreciation rate of the circuit breaker '''
-        self.depRate = depRate
-
 class Site(object):
     ''' Class that stores the information relating to the solar farm site '''
     def __init__(self, transformer, transformerNum, array, arrayNum, circuitBreaker, circuitBreakerNum, inverter,
@@ -680,6 +736,8 @@ class Site(object):
         self.temperature = temperature
         self.irradiance = irradiance
         self.sunlightHours = sunlightHours
+
+        # Finanical properties
         self.landPrice = landPrice
         self.landAppRate = landAppRate
 
@@ -787,6 +845,22 @@ class Site(object):
         ''' Set the sunlight hours of the site '''
         self.sunlightHours = sunlightHours
 
+    def getLandPrice(self):
+        ''' Return the land price of the solar farm '''
+        return self.landPrice
+
+    def setLandPrice(self, landPrice):
+        ''' Set the land price of the solar farm '''
+        self.landPrice = landPrice
+
+    def getLandAppRate(self):
+        ''' Return the land appreciation rate '''
+        return self.landAppRate
+
+    def setLandAppRate(self):
+        ''' Set the land appreciation rate '''
+        self.landAppRate = landAppRate
+
 # -------------------------------------------------------------------------------------------------------------------
 # MISC FINANCIAL
 # -------------------------------------------------------------------------------------------------------------------
@@ -795,8 +869,58 @@ class Site(object):
 maintainceBudget = 100000 # Maintaince budget per year
 labourCosts = 500000      # Intial labour costs to build site
 miscCapitalCosts = 500000 # Misc initial capital costs
-miscDepRate = 8           # Misc depreciation rate (# per year)
+miscDepRate = 8           # Misc depreciation rate (%/year)
 buyBackRate = 0.25        # Selling rate of power ($/kWh)
+
+class Financial(object):
+    ''' Class that stores the information relating to the finanical data that is independent of the solar farm '''
+    def __init__(self, maintenance, labour, capital, depRate, selling):
+        ''' Initialise the Financial object '''
+        self.maintenance = maintenance      # Maintaince budget per year
+        self.labour = labour                # Initial labour costs to build site
+        self.capital = capital              # Initial capital costs
+        self.depRate = depRate              # Depreciation rate (%/year)
+        self.selling = selling              # Selling rate of power (currency/kWh)
+
+    def getMaintenance(self):
+        ''' Return the maintenance budget per year '''
+        return self.maintenance
+
+    def setMaintenance(self, maintenance):
+        ''' Set the maintenance budget per year '''
+        self.maintenance = maintenance
+
+    def getLabour(self):
+        ''' Return the labour costs '''
+        return self.labour
+
+    def setLabour(self, labour):
+        ''' Set the  labour costs '''
+        self.labour = labour
+
+    def getCapital(self):
+        ''' Return the capital costs '''
+        return self.capital
+
+    def setCapital(self, capital):
+        ''' Set the capital costs '''
+        self.capital = capital
+
+    def getDepRate(self):
+        ''' Return the depreciation rate '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the depreciation rate '''
+        self.depRate = depRate
+
+    def getSelling(self):
+        ''' Return the selling rate of power '''
+        return self.selling
+
+    def setSelling(self, selling):
+        ''' Set the selling rate of power '''
+        self.selling = selling
 
 # -------------------------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
