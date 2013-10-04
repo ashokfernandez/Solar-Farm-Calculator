@@ -13,8 +13,9 @@ import math
 import matplotlib.pyplot as plt
 import numpy
 import time
+from datetime import *
 
-start = time.time()
+#start = time.time()
 
 def calc_length2(lat1, lon1, lat2, lon2):
     R = 6371 # radius of the earth (km)
@@ -24,8 +25,6 @@ def calc_length2(lat1, lon1, lat2, lon2):
     latAverage = math.radians( (lat1+lat2) / 2 ) # average latitude in radians
     length = R * math.sqrt((dlat)**2 + (math.cos(latAverage) * dlon) **2) # formula of linear distance between points
     return length
-
-
 
 def calc_optimumAngle(directIrr, siteLat):
 
@@ -307,11 +306,14 @@ InvDepRate = 7 # Inverter depreciation rate (# per year)
 
 class Inverter(object):
     ''' Class to store the information relating to the Inverter '''
-    def __init__(self, powerFactor, efficiency, voltage):
+    def __init__(self, powerFactor, efficiency, voltage, cost, depRate):
         '''Initialise an inverter object '''
         self.powerFactor = powerFactor  # Power factor of the inverter
         self.efficiency = efficiency    # Efficiency of the inverter
         self.voltage = voltage          # Output voltage of the inverter to the transformer
+
+        self.cost = cost
+        self.depRate = depRate
 
     def getPowerFactor(self):
         ''' Return the power factor '''
@@ -692,10 +694,10 @@ class Site(object):
 
 # Deprecated variables
 maintainceBudget = 100000 # Maintaince budget per year
-labourCosts = 500000 # Intial labour costs to build site
-miscCapitalCosts = 500000# Misc initial capital costs
-miscDepRate = 8 # Misc depreciation rate (# per year)
-buyBackRate = 0.25 # Selling rate of power ($/kWh)
+labourCosts = 500000      # Intial labour costs to build site
+miscCapitalCosts = 500000 # Misc initial capital costs
+miscDepRate = 8           # Misc depreciation rate (# per year)
+buyBackRate = 0.25        # Selling rate of power ($/kWh)
 
 # -------------------------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
@@ -715,9 +717,7 @@ months = {'January' : 0, 'February' : 28, 'March' : 59, 'April': 89, 'May': 120,
           'June' : 150 , 'July': 181, 'August': 212, 'September': 242, 'October': 273, 
           'November':303, 'December':334}
 # daysMonths = [0, 28, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334];
-
 # bindex = find(ismember(months, startMonth));
-
 # dindex = find(ismember(months, endMonth));
 
 beginDay = startDay + months[startMonth] #daysMonths(bindex);
@@ -726,6 +726,28 @@ if findPayBack == 0:
     simLength = 365 * (endYear - startYear - 1) + (365 - beginDay) + months[endMonth]+ endDay
 else:
     simLength = 50 * 365
+
+class GMT(datetime):
+    '''docstring for GMT'''
+    def __init__(self, start, finish):
+        ''' The start and finish variables are tuples containing the year, month and day (in that order) '''
+        self.start = date(start[0], start[1], start[2])
+        self.finish = date(finish[0], finish[1], finish[2])
+        self.days = start - finish
+        self.dates = [self.start - datetime.timedelta(days=self.days) for self.days in range(0,numdays)]
+
+    def getStartDate(self):
+        return self.start
+
+    def setStartDate(self, date):
+        self.start = date
+
+    def getFinishDate(self):
+        return self.finish
+
+    def setFinishDate(self, date):
+        self.finish = date
+        
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -756,8 +778,6 @@ for i in range(365):
 
 
 # plot(panelIrr)
-
-
 
 # Initialise data arrays
 
@@ -867,7 +887,7 @@ for i in range(simLength):
     else:
         day = 0    
         
-print "Simulation took %.3fs" % (time.time() - start)
+#print "Simulation took %.3fs" % (time.time() - start)
 # income = sum(energyOutput)*buyBackRate;
 t = range(len(solarOutput))
 plt.plot(t, solarOutput, t, DCoutput)
