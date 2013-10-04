@@ -17,16 +17,23 @@ from datetime import *
 
 #start = time.time()
 
-def calc_length2(lat1, lon1, lat2, lon2):
-    R = 6371 # radius of the earth (km)
-    dlat = math.radians(lat2 - lat1) # latitude difference in radians
-    dlon = math.radians(lon2 - lon1) # longitude difference in radians
+def calcTransmissionLength(site, GEP):
+    ''' Calculates the distance between the solar farm site and the grid entry point (GEP) '''
+    R = 6371 # radius of the earth (km) TODO: Citation needed
+
+    # Calculate the latitude / longitude difference in radians
+    dlat = math.radians(site.getLatitude() - GEP.getLatitude())
+    dlon = math.radians(site.getLongitude() - GEP.getLongitude())
     
-    latAverage = math.radians( (lat1+lat2) / 2 ) # average latitude in radians
-    length = R * math.sqrt((dlat)**2 + (math.cos(latAverage) * dlon) **2) # formula of linear distance between points
+    # Average latitude in radians
+    latAverage = math.radians((site.getLatitude()+GEP.getLatitude()) / 2)
+
+    # The linear distance between the site and the GEP
+    length = R * math.sqrt((dlat) ** 2 + (math.cos(latAverage) * dlon) ** 2)
+
     return length
 
-def calc_optimumAngle(directIrr, siteLat):
+def calcOptimumAngle(directIrr, site):
 
     testAngle = [x * 0.1 for x in range(0, 90)]  # [0:0.1:90] specifices angle between 0 and 90 degrees
     angleLength = len(testAngle) # length of test angle array
@@ -43,7 +50,7 @@ def calc_optimumAngle(directIrr, siteLat):
             # arbitary angle that is used for calculating the irradiance
             argRadians = math.radians(360/365*(284 + j))
             # same as above for the next 3 lines
-            a = 90 - siteLat + 23.45 * math.sin(argRadians)
+            a = 90 - site.getLatitude() + 23.45 * math.sin(argRadians)
             argRadians_1 = math.radians(a + testAngle[i])
             argRadians_2 = math.radians(a)
 
@@ -62,22 +69,17 @@ def calc_optimumAngle(directIrr, siteLat):
     return opAngle
 
 
-def calc_resistance(mat, temp, diameter, length):
-    ''' Calculates the resistance of a cable given the material, ambient temperature, diameter and length. '''
+def calcCableResistance(cable, temperature):
+    ''' Calculates the resistance of a cable given the cable material, ambient temperature, diameter and length. '''
 
-    # uses base temperature of 20 degrees celcius and corrects for the ambient temperature.
-    if mat == 'Cu': # resistivity for copper
-        p = 1.68e-8*(1 + 0.00362*(temp-20))
-    elif mat == 'Al': # aluminimum
-        p = 2.82e-8*(1 + 0.0039*(temp-20))
+    # Uses base temperature of 20 degrees celcius to correct the resistivity for the ambient temperature.
+    caliResistivity = cable.material.getResistivity()*(1 + cable.material.getTempCoefficient()*(temperature-20))
     
     # area of the cable
-    area = math.pi / 4*(diameter*1e-3)**2
+    area = math.pi / 4 * (cable.getDiameter() * 1e-3) ** 2
+    resistance = p * cable.getLength() / area
 
-    resistance = p*length/area
     return resistance
-
-
 
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR PANELS
@@ -92,17 +94,20 @@ panelArea = 1.63 # Panel area (m^2)
 
 # Financial
 panelCost = 50 # Cost of the single panel
-panelDepRate = 20 # Panel depreciation rate (# per year)
+panelDepRate = 20 # Panel depreciation rate (% per year)
 
 
 class PVPanel(object):
     ''' Class to store information relating to a solar PV panel '''
-    def __init__(self, voltage, efficiency, degradationRate, area):
+    def __init__(self, voltage, efficiency, degradationRate, area, cost, depRate = 0):
         ''' Initialise a PV panel object '''
         self.voltage = voltage                  # Panel rated voltage (V)
         self.efficiency = efficiency            # Panel rated efficiency (%)
         self.degradationRate = degradationRate  # Panel asset degradation rate (%)
         self.area = area                        # Panel surface area (m^2)
+
+        self.cost = cost                        # Cost (currency/unit)
+        self.depRate = depRate                  # Asset deprecation rate (%)
 
     def getVoltage(self):
         ''' Return the panel voltage '''
@@ -135,6 +140,22 @@ class PVPanel(object):
     def setArea(self):
         ''' Set the panel surface area '''
         self.area = area
+
+    def getCost(self):
+        ''' Return the cost of the panel '''
+        return self.cost
+
+    def setCost(self, cost):
+        ''' Set the cost of the panel '''
+        self.cost = cost
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the panel '''
+        return self.depRate
+
+    def setDepRate(self, depRate):
+        ''' Set the asset value depreciation rate of the panel '''
+        self.depRate = depRate
 
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR MODULE
@@ -245,6 +266,14 @@ class Material(object):
     def setResistivity(self, resistivity):
         ''' Sets the resistivity of the material '''
         self.resistivity = resistivity
+
+    def getTempCoefficient(self):
+        ''' Return the temperature coefficient of the material '''
+        return self.tempCoefficient
+
+    def setTempCoefficient(self, tempCoefficient):
+        ''' Set the temperature coefficient of the material '''
+        self.tempCoefficient = tempCoefficient
 
 # -------------------------------------------------------------------------------------------------------------------
 # DC CABLE
@@ -731,11 +760,11 @@ else:
 class GMT(object):
     '''docstring for GMT'''
     def __init__(self, start, finish):
-        ''' '''
+        ''' Initialise '''
         self.start = start
         self.finish = finish
         self.days = (start - finish).days
-        self.dates = [self.start - datetime.timedelta(days=self.days) for self.days in range(0,numdays)]
+        self.dates = [self.start - datetime.timedelta(days=x) for x in range(0,c.days)]
 
     def getStartDate(self):
         return self.start
@@ -768,144 +797,144 @@ class GMT(object):
 # -------------------------------------------------------------------------------------------------------------------
 
 
-if specifyLength == 0:
-    AC2Length = calc_length2(siteLat, siteLon, GXPLat, GXPLon)
+# if specifyLength == 0:
+#     AC2Length = calc_length2(siteLat, siteLon, GXPLat, GXPLon)
 
 
-# Solar Panel calcs
+# # Solar Panel calcs
 
-# Working the irradiance on the panel as a function of the day
-optimumAngle = calc_optimumAngle(irradiance, siteLat)
+# # Working the irradiance on the panel as a function of the day
+# optimumAngle = calc_optimumAngle(irradiance, siteLat)
 
-panelIrr = []
+# panelIrr = []
 
-if useOptimumAngle == 1:
-    usedAngle = optimumAngle
-else:
-    usedAngle = arrayAngle
+# if useOptimumAngle == 1:
+#     usedAngle = optimumAngle
+# else:
+#     usedAngle = arrayAngle
 
-for i in range(365):
-    argRadians = math.radians(360/365*(284 + i))
-    a = 90 - siteLat + 23.45 * math.sin(argRadians)
+# for i in range(365):
+#     argRadians = math.radians(360/365*(284 + i))
+#     a = 90 - siteLat + 23.45 * math.sin(argRadians)
 
-    argRadians_1 = math.radians(a + usedAngle)
-    argRadians_2 = math.radians(a)
-    panelIrr.append(irradiance[i] * math.sin(argRadians_1) / math.sin(argRadians_2))
-
-
-# plot(panelIrr)
-
-# Initialise data arrays
-
-solarOutput = list(range(simLength))
-DCoutput = list(range(simLength))
-invOutput = list(range(simLength))
-AC1Output = list(range(simLength))
-TxOut = list(range(simLength))
-AC2Output = list(range(simLength))
-totalEffeciency = list(range(simLength))
-elecEff = list(range(simLength))
-energyOutput = list(range(simLength))
-
-capitalWorth = list(range(50))
+#     argRadians_1 = math.radians(a + usedAngle)
+#     argRadians_2 = math.radians(a)
+#     panelIrr.append(irradiance[i] * math.sin(argRadians_1) / math.sin(argRadians_2))
 
 
-day = beginDay - 1
-days = list(range(simLength))
-year = 0
-numPanels = moduleNum*arrayModuleNum*numArrays        
-totalArea = panelArea*numPanels
+# # plot(panelIrr)
 
-for i in range(simLength):
-    
-    days[i] = day + 1 
-    
-    #---------------------Power/Energy Analysis---------------------------#    
-    
-    solarOutput[i] = panelIrr[day] * totalArea * panelEff * (1 - panelDegRate / (100*365) * i)
-    
-    # DC cable calcs
-    
-    DCresistance = calc_resistance(DCcableMaterial, temp[day], DCdiameter, DCcableLength)
-    
-    DCcurrent = solarOutput[i] / solarVoltage
-    
-    DCloss = 2 * DCcurrent**2 * DCresistance
-    
-    DCEff = (solarOutput[i] - DCloss) / solarOutput[i]
-    
-    DCoutput[i] = solarOutput[i] - DCloss
-    
-    # Inverter calcs
-    
-    invOutput[i] = DCoutput[i] * InvEff
-    
-    # 3 P AC Cables to Tx calcs
-    
-    AC1resistance = calc_resistance(AC1Material, temp[day], AC1Diameter, AC1Length)
+# # Initialise data arrays
 
-    IAC1 = invOutput[i] / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
+# solarOutput = list(range(simLength))
+# DCoutput = list(range(simLength))
+# invOutput = list(range(simLength))
+# AC1Output = list(range(simLength))
+# TxOut = list(range(simLength))
+# AC2Output = list(range(simLength))
+# totalEffeciency = list(range(simLength))
+# elecEff = list(range(simLength))
+# energyOutput = list(range(simLength))
+
+# capitalWorth = list(range(50))
+
+
+# day = beginDay - 1
+# days = list(range(simLength))
+# year = 0
+# numPanels = moduleNum*arrayModuleNum*numArrays        
+# totalArea = panelArea*numPanels
+
+# for i in range(simLength):
     
-    AC1loss = 3 * IAC1**2 * AC1resistance
+#     days[i] = day + 1 
     
-    AC1Output[i] = invOutput[i] - AC1loss
+#     #---------------------Power/Energy Analysis---------------------------#    
     
-    # Transformer calcs
+#     solarOutput[i] = panelIrr[day] * totalArea * panelEff * (1 - panelDegRate / (100*365) * i)
     
-    TxOut[i] = AC1Output[i] * TxEff
+#     # DC cable calcs
     
-    # 3 P tranmission lines to GXP calcs
+#     DCresistance = calc_resistance(DCcableMaterial, temp[day], DCdiameter, DCcableLength)
     
-    strandResistance = calc_resistance(AC2Material, temp[day], AC2StrandDiameter, AC2Length)
+#     DCcurrent = solarOutput[i] / solarVoltage
     
-    totalResistance = strandResistance / AC2StrandNum
+#     DCloss = 2 * DCcurrent**2 * DCresistance
     
-    IAC2 = TxOut[i] / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
+#     DCEff = (solarOutput[i] - DCloss) / solarOutput[i]
     
-    AC2loss = 3 * IAC2**2 * totalResistance
+#     DCoutput[i] = solarOutput[i] - DCloss
     
-    AC2Output[i] = TxOut[i] - AC2loss
+#     # Inverter calcs
     
-    totalEffeciency[i] = (AC2Output[i] / (panelIrr[day]*totalArea)) * 100
+#     invOutput[i] = DCoutput[i] * InvEff
     
-    elecEff[i] = (AC2Output[i] / solarOutput[i]) * 100
+#     # 3 P AC Cables to Tx calcs
     
-    energyOutput[i] = AC2Output[i] * sunlightHours[day] # Daily output in Wh
+#     AC1resistance = calc_resistance(AC1Material, temp[day], AC1Diameter, AC1Length)
+
+#     IAC1 = invOutput[i] / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
     
-    #-------------Finicial-----------------------------------------------#
-    # if day == startDay and i != 1:
-    #     # Calculate finicial data
-    #     year = year + 1
-    #     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
-    #     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
-    #     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
-    #     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
-    #     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
+#     AC1loss = 3 * IAC1**2 * AC1resistance
+    
+#     AC1Output[i] = invOutput[i] - AC1loss
+    
+#     # Transformer calcs
+    
+#     TxOut[i] = AC1Output[i] * TxEff
+    
+#     # 3 P tranmission lines to GXP calcs
+    
+#     strandResistance = calc_resistance(AC2Material, temp[day], AC2StrandDiameter, AC2Length)
+    
+#     totalResistance = strandResistance / AC2StrandNum
+    
+#     IAC2 = TxOut[i] / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
+    
+#     AC2loss = 3 * IAC2**2 * totalResistance
+    
+#     AC2Output[i] = TxOut[i] - AC2loss
+    
+#     totalEffeciency[i] = (AC2Output[i] / (panelIrr[day]*totalArea)) * 100
+    
+#     elecEff[i] = (AC2Output[i] / solarOutput[i]) * 100
+    
+#     energyOutput[i] = AC2Output[i] * sunlightHours[day] # Daily output in Wh
+    
+#     #-------------Finicial-----------------------------------------------#
+#     # if day == startDay and i != 1:
+#     #     # Calculate finicial data
+#     #     year = year + 1
+#     #     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
+#     #     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
+#     #     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
+#     #     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
+#     #     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
         
-    #     expenses = maintainceBudget*year + labourCosts
-    #     totalIncome = sum(energyOutput)/1000*buyBackRate
+#     #     expenses = maintainceBudget*year + labourCosts
+#     #     totalIncome = sum(energyOutput)/1000*buyBackRate
         
-    #     if (totalIncome > (expenses + capitalWorth(1)))
-    #         break
+#     #     if (totalIncome > (expenses + capitalWorth(1)))
+#     #         break
         
     
-    # elif i == 1:
-    #     # Initial Capital Worth
-    #     capitalWorth[year + 1] = landPrice*siteArea + panelCost*numPanels
-    #     capitalWorth += DCcostPerMeter*DCcableLength + InvCost*numInverters
-    #     capitalWorth += AC1Cost*AC1Length + TxCost + (AC2Cost + TranLineCost)*AC2Length
-    #     capitalWorth += miscCapitalCosts
+#     # elif i == 1:
+#     #     # Initial Capital Worth
+#     #     capitalWorth[year + 1] = landPrice*siteArea + panelCost*numPanels
+#     #     capitalWorth += DCcostPerMeter*DCcableLength + InvCost*numInverters
+#     #     capitalWorth += AC1Cost*AC1Length + TxCost + (AC2Cost + TranLineCost)*AC2Length
+#     #     capitalWorth += miscCapitalCosts
     
-    #---------------------------------------------------------------------#
+#     #---------------------------------------------------------------------#
     
-    if day < 364:
-        day += 1
-    else:
-        day = 0    
+#     if day < 364:
+#         day += 1
+#     else:
+#         day = 0    
         
-#print "Simulation took %.3fs" % (time.time() - start)
-# income = sum(energyOutput)*buyBackRate;
-t = range(len(solarOutput))
-plt.plot(t, solarOutput, t, DCoutput)
-plt.show()
+# #print "Simulation took %.3fs" % (time.time() - start)
+# # income = sum(energyOutput)*buyBackRate;
+# t = range(len(solarOutput))
+# plt.plot(t, solarOutput, t, DCoutput)
+# plt.show()
 
