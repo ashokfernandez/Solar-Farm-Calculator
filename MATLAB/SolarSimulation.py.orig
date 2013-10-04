@@ -778,6 +778,7 @@ class SimulationDay(object):
 
     #     return (dayOfYear, month)
 
+<<<<<<< HEAD
 class Simulation(object):
     '''Object to contain the simulation parameters'''
     def __init__(self, start, finish, numThreads=5):
@@ -797,6 +798,16 @@ class Simulation(object):
             simulationDay = SimlationDay(day)
             self.inputDays.put(simulationDay)
 
+=======
+class GMT(object):
+    '''docstring for GMT'''
+    def __init__(self, start, finish):
+        ''' Initialise '''
+        self.start = start
+        self.finish = finish
+        self.days = (start - finish).days
+        self.dates = [self.start - datetime.timedelta(days=x) for x in range(0,c.days)]
+>>>>>>> efdb70ab98e2f4f705329325f6c0c79ae70b8b6a
 
     def getStartDate(self):
         return self.start
@@ -863,6 +874,7 @@ class Simulation(object):
 # numPanels = moduleNum*arrayModuleNum*numArrays        
 # totalArea = panelArea*numPanels
 
+<<<<<<< HEAD
 
 
 
@@ -918,6 +930,79 @@ class CalculateDay(threading.Thread):
 
                 # Calculates the solar power in W for a whole day
                 solarOutput = irradiance * totalArea * panelEff  # TODO: DEGREDATION RATE (1 - panelDegRate / (100*365) * i)
+=======
+# for i in range(simLength):
+    
+#     days[i] = day + 1 
+    
+#     #---------------------Power/Energy Analysis---------------------------#    
+    
+#     solarOutput[i] = panelIrr[day] * totalArea * panelEff * (1 - panelDegRate / (100*365) * i)
+    
+#     # DC cable calcs
+    
+#     DCresistance = calc_resistance(DCcableMaterial, temp[day], DCdiameter, DCcableLength)
+    
+#     DCcurrent = solarOutput[i] / solarVoltage
+    
+#     DCloss = 2 * DCcurrent**2 * DCresistance
+    
+#     DCEff = (solarOutput[i] - DCloss) / solarOutput[i]
+    
+#     DCoutput[i] = solarOutput[i] - DCloss
+    
+#     # Inverter calcs
+    
+#     invOutput[i] = DCoutput[i] * InvEff
+    
+#     # 3 P AC Cables to Tx calcs
+    
+#     AC1resistance = calc_resistance(AC1Material, temp[day], AC1Diameter, AC1Length)
+
+#     IAC1 = invOutput[i] / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
+    
+#     AC1loss = 3 * IAC1**2 * AC1resistance
+    
+#     AC1Output[i] = invOutput[i] - AC1loss
+    
+#     # Transformer calcs
+    
+#     TxOut[i] = AC1Output[i] * TxEff
+    
+#     # 3 P tranmission lines to GXP calcs
+    
+#     strandResistance = calc_resistance(AC2Material, temp[day], AC2StrandDiameter, AC2Length)
+    
+#     totalResistance = strandResistance / AC2StrandNum
+    
+#     IAC2 = TxOut[i] / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
+    
+#     AC2loss = 3 * IAC2**2 * totalResistance
+    
+#     AC2Output[i] = TxOut[i] - AC2loss
+    
+#     totalEffeciency[i] = (AC2Output[i] / (panelIrr[day]*totalArea)) * 100
+    
+#     elecEff[i] = (AC2Output[i] / solarOutput[i]) * 100
+    
+#     energyOutput[i] = AC2Output[i] * sunlightHours[day] # Daily output in Wh
+    
+#     #-------------Finicial-----------------------------------------------#
+#     # if day == startDay and i != 1:
+#     #     # Calculate finicial data
+#     #     year = year + 1
+#     #     capitalWorth = landPrice * siteArea * (1+landAppRate/100)**year 
+#     #     capitalWorth += panelCost * numPanels * (1-panelDepRate/100)**year + DCcostPerMeter*DCcableLength*(1-DCDepRate/100)**year
+#     #     capitalWorth += InvCost*numInverters*(1-InvDepRate/100)**year + AC1Cost*AC1Length*(1-AC1DepRate/100)**year
+#     #     capitalWorth += TxCost*(1-TxDepRate/100)**2 + (AC2Cost + TranLineCost)*AC2Length*(1-AC2DepRate/100)**year
+#     #     capitalWorth += miscCapitalCosts*(1-miscDepRate/100)**year
+        
+#     #     expenses = maintainceBudget*year + labourCosts
+#     #     totalIncome = sum(energyOutput)/1000*buyBackRate
+        
+#     #     if (totalIncome > (expenses + capitalWorth(1)))
+#     #         break
+>>>>>>> efdb70ab98e2f4f705329325f6c0c79ae70b8b6a
         
                 # DC cable calcs
                 DCresistance = calc_resistance(DCcableMaterial, temperature, DCdiameter, DCcableLength)
@@ -984,7 +1069,26 @@ class CalculateDay(threading.Thread):
             
             #---------------------------------------------------------------------#
     
+<<<<<<< HEAD
 
+=======
+#     # elif i == 1:
+#     #     # Initial Capital Worth
+#     #     capitalWorth[year + 1] = landPrice*siteArea + panelCost*numPanels
+#     #     capitalWorth += DCcostPerMeter*DCcableLength + InvCost*numInverters
+#     #     capitalWorth += AC1Cost*AC1Length + TxCost + (AC2Cost + TranLineCost)*AC2Length
+#     #     capitalWorth += miscCapitalCosts
+    
+#     #---------------------------------------------------------------------#
+    
+#     if day < 364:
+#         day += 1
+#     else:
+#         day = 0    
+        
+# #print "Simulation took %.3fs" % (time.time() - start)
+# # income = sum(energyOutput)*buyBackRate;
+>>>>>>> efdb70ab98e2f4f705329325f6c0c79ae70b8b6a
 # t = range(len(solarOutput))
 # plt.plot(t, solarOutput, t, DCoutput)
 # plt.show()
