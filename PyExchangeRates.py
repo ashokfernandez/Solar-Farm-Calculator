@@ -174,7 +174,7 @@ class Money(object):
 
     def __add__(self, other):
         ''' Adds two currencies together. The resulting currency is United States Dollars'''
-        if isinstance(other, Money):            
+        if isinstance(other, Money):
             firstAmount = self.convert(UNITED_STATES_DOLLARS_KEY).getAmount()
             secondAmount = other.convert(UNITED_STATES_DOLLARS_KEY).getAmount()
             finalAmount = firstAmount + secondAmount
@@ -183,10 +183,6 @@ class Money(object):
         # Throw an exception if an amount is given that isn't a Money object
         else:
             raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
-            print other
-    
-    # Addition should be the same no matter the object's order
-    __radd__ = __add__
 
     def __sub__(self, other):
         ''' Subtracts two currencies together. The resulting currency is United States Dollars'''
@@ -199,9 +195,6 @@ class Money(object):
         # Throw an exception if an amount is given that isn't a Money object
         else:
             raise TypeError("unsupported operand type(s) for -: '%s' and '%s'" % (type(self), type(other)))
-    
-    # Subtraction should be the same no matter the object's order
-    __rsub__ = __sub__
 
     def __mul__(self, other):
         ''' Multiplies currencies together. The resulting currency is United States Dollars by default'''
@@ -232,8 +225,8 @@ class Money(object):
             finalAmount = firstAmount / secondAmount
             return Money(finalAmount, UNITED_STATES_DOLLARS_KEY, self.exchange)
 
-        # Allow scalar division
-        elif isinstance(other,int) or isinstance(other,float) or isinstance(other,long):
+        # Allow scalar multiplication 
+        elif isinstance(other,int) or isinstance(other,float):
             currentAmount = self.getAmount()
             newAmount = currentAmount / other
             return Money(newAmount, UNITED_STATES_DOLLARS_KEY, self.exchange)
@@ -383,6 +376,14 @@ class Exchange(object):
     def withdraw(self, amount, currencyKey):
         ''' Creates a money object that points to this exchange with the given amount of the given currency '''
         
+        # Check the amount is a numeric value
+        if not (isinstance(amount, int) or isinstance(amount,float) or isinstance(amount,long)):
+            raise TypeError('Amount must be of type int, float or long not %s' % type(amount))
+
+        # Check the currency key is a string
+        if not (isinstance(currencyKey, str)):
+            raise TypeError('Currency key must be of type str not %s' % type(amount))
+
         # Convert the key to uppercase
         currencyKey = currencyKey.upper()
 
