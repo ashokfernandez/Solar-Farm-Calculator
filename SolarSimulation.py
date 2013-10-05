@@ -25,6 +25,9 @@ import PyExchangeRates
 from time import sleep
 import progressbar # https://pypi.python.org/pypi/progressbar/
 
+# Create a currency exchange
+CURRENCY_EXCHANGE = PyExchangeRates.Exchange('843ce8fdc22c47779fb3040c2ba9a586')
+
 
 def calcLength(lat1, lng1, lat2, lng2):
     ''' Calculates the distance between two latitude and longtitude points in meters. '''
@@ -80,7 +83,7 @@ def calcOptimumAngle(directIrr, siteLat):
     declinationAngle = 23.45 * math.sin(360 * (284 + 30) / 365)
     monthlyBestTiltAngle = siteLat - declinationAngle
 
-    return opAngle
+    return monthlyBestTiltAngle
 
 def calcCableResistance(cable, temperature):
     ''' Calculates the resistance of a cable given the cable material, ambient temperature,
@@ -103,7 +106,7 @@ def calcCableResistance(cable, temperature):
 class Asset(object):
     ''' Asset superclass for PV farm components. Contains the financial data relating to the
         asset. '''
-    exchange = PyExchangeRates.Exchange('843ce8fdc22c47779fb3040c2ba9a586')
+    exchange = CURRENCY_EXCHANGE
 
     def __init__(self, cost, currency, depRate = 0):
         ''' Initialise the asset superclass object. '''
@@ -414,10 +417,10 @@ class CircuitBreaker(Asset):
 # --------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
 # --------------------------------------------------------------------------------------------------
-class Site(object):
+class Site(Asset):
     ''' Class that stores the information relating to the solar farm site '''
     def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, 
-                 latitude, longitude, temperature, landPrice, landAppRate):
+                 latitude, longitude, temperature, landPrice, landAppRate=0, currency='USD'):
         ''' Initialise the solar farm site object '''
         self.transformerNum = transformerNum
         self.arrayNum = arrayNum
@@ -429,6 +432,8 @@ class Site(object):
         self.latitude = latitude
         self.longitude = longitude
 
+        # Financial properties
+        super(Site, self).__init__(landPrice, currency, -landAppRate)
 
     def getTransformerNum(self):
         ''' Return the number of transformers within the site '''
@@ -459,13 +464,6 @@ class Site(object):
         as 1 for January and 12 for December '''
         return self.temperature[month - 1]
 
-    def getLandPrice(self):
-        ''' Return the land price of the solar farm '''
-        return self.landPrice
-
-    def getLandAppRate(self):
-        ''' Return the land appreciation rate '''
-        return self.landAppRate
 
 # --------------------------------------------------------------------------------------------------
 # MISC FINANCIAL----------------
@@ -481,33 +479,44 @@ class Site(object):
 class Financial(object):
     ''' Class that stores the information relating to the finanical data that is independent of the
     solar farm '''
-    def __init__(self, maintenance, labour, miscCapital, depRate, selling):
+    exchange = CURRENCY_EXCHANGE
+
+    def __init__(self, maintenance, miscExpenses, interestRate, powerPrice, baseCurrency='USD'):
         ''' Initialise the Financial object '''
-        self.maintenance = maintenance      # Maintaince budget per year
-        self.labour = labour                # Initial labour costs to build site
-        self.miscCapital = miscCapital      # Initial misc capital costs 
-        self.depRate = depRate              # Depreciation rate (%/year)
-        self.selling = selling              # Selling rate of power (currency/kWh)
+        self.baseCurrency = baseCurrency         # Base currency that results are returned in
+        self.interestRate = interestRate                                               # Interest rate (%/year)
+        self.maintenance = Financial.exchange.withdraw(maintenance,self.baseCurrency)  # Maintaince budget per year
+        self.loan = Financial.exchange.withdraw(miscExpenses,self.baseCurrency)        # + assets 
+        self.powerPrice = Financial.exchange.withdraw(powerPrice,self.baseCurrency)    # Selling rate of power (currency/kWh)
+        
 
     def getDailyMaintenance(self):
         ''' Return the maintenance budget per year '''
         return self.maintenance / 365.0
 
-    def getLabour(self):
-        ''' Return the labour costs '''
-        return self.labour
+    def addToLoan(self, cost):
+        ''' Adds money to the initial cost '''
+        self.loan += cost
+        self.loan.convert(self.baseCurrency)
 
-    def getMiscCapital(self):
-        ''' Return the capital costs '''
-        return self.miscCapital
+    def makeLoanPayment(self, payment):
+        ''' Pays back money to the loan for the initial costs '''
+        self.loan -= payment
+        self.loan.convert(self.baseCurrency)
 
-    def getDepRate(self):
-        ''' Return the depreciation rate '''
-        return self.depRate
+    def accumlateDailyInterest(self):
+        ''' Adds interest to the intial expenses loan '''
+        if self.loan.getAmount() > 0:
+            self.loan *= (1 + self.interestRate/(365*100))
+            self.loan.convert(self.baseCurrency)
 
-    def getSelling(self):
+    def getCurrentLoanValue(self):
+        ''' Returns the current value of the loan '''
+        return self.loan.getAmount()
+
+    def getPowerPrice(self):
         ''' Return the selling rate of power '''
-        return self.selling
+        return self.powerPrice
 
 # --------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
@@ -651,6 +660,11 @@ class thread_SimulateDay(threading.Thread):
             simDay.totalEffciency = totalEffciency
             simDay.electricalEnergy = energyOutput
 
+            # TODO: Calculate peak currents for the day and output from the thread.
+            simDay.peakCurrent_DC = DCcurrent
+            simDay.peakCurrent_AC1 = IAC1
+            simDay.peakCurrent_AC2 = IAC2
+
             # Push the completed simulation day to the output queue and tick it off the input queue
             self.outputQueue.put(simDay)
             self.inputQueue.task_done()
@@ -701,7 +715,6 @@ class SimulationDay(object):
         effciency between the solar energy in and the energy out at the grid connection point'''
         return self.totalEffciency
 
-
 class Simulation(object):
     '''Object to contain the simulation parameters'''
     def __init__(self, start, finish, PVPanel, PVModule, PVArray, DCCable, 
@@ -710,7 +723,8 @@ class Simulation(object):
         '''Initilise the simulation'''
         self.start = start
         self.finish = finish
-        self.days = (finish - start).days
+        self.numDays = (finish - start).days
+        self.days = [self.start + datetime.timedelta(days=x) for x in range(0,self.numDays)]
         self.numThreads = numThreads
         self.simulationTimestepMins = simulationTimestepMins
 
@@ -727,22 +741,28 @@ class Simulation(object):
             'Transformer': Transformer, 
             'AC2Cable': AC2Cable, 
             'CircuitBreaker': CircuitBreaker, 
-            'Site': Site
+            'Site': Site,
+            'Financial' : Financial
         }
+
+        # Simulation results - will be replaced by dictionary with array results when the 
+        # simulations have been run
+        self.powerResults = {}
+        self.financialResults = {}
         
         # Queues to store the input and output to the simulation
         self.inputQueue = Queue.Queue()
         self.outputQueue = Queue.Queue()
 
-        print "Initialising %i day simulation" % self.days
+        print "Initialising %i day simulation" % self.numDays
 
         print "Start date: ", self.start
         print "Finish date: ", self.finish
 
         # Queue up the list of days to simulate
-        dates = [self.start + datetime.timedelta(days=x) for x in range(0,self.days)]
+        
 
-        for day in dates:
+        for day in self.days:
             simulationDay = SimulationDay(day, self.parameters)
             self.inputQueue.put(simulationDay)
 
@@ -760,43 +780,79 @@ class Simulation(object):
     def setFinishDate(self, date):
         self.finish = date
 
-    def __runFinancial(self, powerOutput):
+    def __runFinancial(self):
         '''Runs the finicial simulation, requires the results from power flow simulation'''
-        # The two arrays below are assumed to be from the input powerOutput
-        days = []
-        electricalEnergy = []
 
+        # Sum the costs of all the assets 
+        initalCosts = self.parameters['PVArray'].getCost()
+        
+        DCCableCost = (2 * self.parameters['DCCable'].getCost())
+        initalCosts += DCCableCost # initalCosts + (2 * self.parameters['DCCable'].getCost()) # Worth of DC cables
+
+        initalCosts += self.parameters['Inverter'].getCost() * self.parameters['Site'].getInverterNum() # Worth of the inverters
+        initalCosts += 3 * self.parameters['AC1Cable'].getCost()  # Worth of AC1 cables
+        initalCosts += self.parameters['Transformer'].getCost() * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
+        initalCosts += 3 * self.parameters['AC2Cable'].getCost()  # Worth of the GEP transmission line
+
+        # Add the inital asset costs to the loan
+        self.parameters['Financial'].addToLoan(initalCosts)
+
+        # Get the relevant results from the power simulation
+        electricalEnergy = self.powerResults['electricalEnergy']
+
+        # Empty arrays for the results of the financial simulation
         netAssetValue = []
-        accumulativeExpenses = []
+        loanValue = []
         accumulativeRevenue = []
-        totalRevenue = []
 
-
+        # Variables to accumlate stuff
         revenueAccumulator = 0
         expensesAccumulator = 0
-        initialExpenses = netAssetValue[0] + Financial.getLabour()
 
-        for i in range(len(days)):
-            deltaTime = (days[i] - self.start).days
+        # Get the initial value of the loan
+        initialExpenses = self.parameters['Financial'].getCurrentLoanValue()
 
-            dailyCapitalWorth = Site.getLandPrice() * (1 + Site.getLandAppRate()/(365*100))**deltaTime # Worth of the land
-            dailyCapitalWorth += PVArray.Asset.getDepreciatedValue(deltaTime) # made the assumption only one input required (works out total panel worth)
-            dailyCapitalWorth += 2 * DCCable.Asset.getDepreciatedValue(deltaTime) * DCCable.getLength()# Worth of DC cables
-            dailyCapitalWorth += Inverter.Asset.getDepreciatedValue(deltaTime) * Site.inverterNum # Worth of the inverters
-            dailyCapitalWorth += 3 * AC1Cable.Asset.getDepreciatedValue(deltaTime) * AC1Cable.getLength() # Worth of AC1 cables
-            dailyCapitalWorth += Transformer.Asset.getDepreciatedValue() * Site.transfomerNum # Worth of the transfomers
-            dailyCapitalWorth += 3 * AC2Cable.Asset.getDepreciatedValue() * AC2Cable.getLength() # Worth of the GEP transmission line
-            capitalWorth[i] +=  Financial.Asset.getDepreciatedValue() # This has to work out the misc capital cost worth
+        # Simulate the financial life of the project
+        for i in range(self.numDays):
 
+            # Calculate the net value of all the assets, factoring in depreciation
+            dailyCapitalWorth = self.parameters['Site'].getDepreciatedValue(i) # Worth of the land
+            dailyCapitalWorth += self.parameters['PVArray'].getDepreciatedValue(i) # made the assumption only one input required (works out total panel worth)
+            dailyCapitalWorth += 2 * self.parameters['DCCable'].getDepreciatedValue(i) # Worth of DC cables
+            dailyCapitalWorth += self.parameters['Inverter'].getDepreciatedValue(i) * self.parameters['Site'].getInverterNum() # Worth of the inverters
+            dailyCapitalWorth += 3 * self.parameters['AC1Cable'].getDepreciatedValue(i)  # Worth of AC1 cables
+            dailyCapitalWorth += self.parameters['Transformer'].getDepreciatedValue(i) * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
+            dailyCapitalWorth += 3 * self.parameters['AC2Cable'].getDepreciatedValue(i)  # Worth of the GEP transmission line
+            
+            # Save the current net asset value
             netAssetValue.append(dailyCapitalWorth)
             
-            dailyExpenses = Financial.getDailyMaintenance()
-            expensesAccumulator += dailyExpenses
-            accumulativeExpenses.append(initialExpenses + expensesAccumulator)
+            # Calculate the daily expenses
+            dailyExpenses = self.parameters['Financial'].getDailyMaintenance()
+            # expensesAccumulator += dailyExpenses
+            # accumulativeExpenses.append(initialExpenses + expensesAccumulator)
             
-            dailyRevenue = 0 # Calculate revenue for the day
+            # Calculate the value of the power sold for this day
+            dailyRevenue = (electricalEnergy[i] / 1000.0) * self.parameters['Financial'].getPowerPrice()  # Convert to watt hours
             revenueAccumulator += dailyRevenue
             accumulativeRevenue.append(revenueAccumulator)
+
+            # Add the daily expenses to the loan, make a payment with the revenue and accumulate some interest
+            self.parameters['Financial'].addToLoan(dailyExpenses)
+            self.parameters['Financial'].makeLoanPayment(dailyRevenue)
+            self.parameters['Financial'].accumlateDailyInterest()
+
+            # Save the current loan value
+            loanValue.append(self.parameters['Financial'].getCurrentLoanValue())
+
+        # Save the simulation results
+        self.financialResults = {
+            'days' : self.days,
+            'netAssetValue' : netAssetValue,
+            'loanValue' : loanValue,
+            'accumulativeRevenue' : accumulativeRevenue,
+        }
+
 
     def __runPower(self):
         ''' Runs the power flow simulation'''
@@ -860,27 +916,46 @@ class Simulation(object):
 
         print "Split data"
 
+        self.powerResults = {
+            'days' : self.days,
+            'electricalEnergy' : electricalEnergy,
+            'electricalEffciency' : electricalEffciency,
+            'totalEffciency' : totalEffciency,
+            'averagePower' : averagePower
+        }
+
+
+    def run(self):
+        self.__runPower()
+        self.__runFinancial()
+
         plt.figure(1)
         plt.subplot(311)
-        plt.plot(days, averagePower)
+        plt.plot(self.days, self.powerResults['averagePower'])
         plt.title('Average output power being supplied to the Grid')
-        plt.ylabel('Energy (kWh)')
+        plt.ylabel('Power (kW)')
 
         plt.subplot(312)
-        plt.plot(days, electricalEffciency, 'g')
+        plt.plot(self.days, self.powerResults['electricalEffciency'], 'g')
         plt.title('Electrical efficiency of the PV farm at GEP')
         plt.ylabel('Efficiency (%)')
 
         plt.subplot(313)
-        plt.plot(days, totalEffciency, 'r')
+        plt.plot(self.days, self.powerResults['totalEffciency'], 'r')
         plt.title('Total efficiency of the PV farm')
         plt.ylabel('Efficiency (%)')
         
-        plt.show()
+        plt.figure(2)
+        plt.subplot(311)
+        plt.plot(self.days, self.financialResults['netAssetValue'], 'r')
+        
+        plt.subplot(312)
+        plt.plot(self.days, self.financialResults['accumulativeExpenses'], 'g')
 
-    def run(self):
-        self.__runPower()
-        # financialData = self.__runFinancial(powerData)
+        plt.subplot(313)
+        plt.plot(self.days, self.financialResults['accumulativeRevenue'], 'b')
+
+        plt.show()
 
         # return (powerData, financialData)
 

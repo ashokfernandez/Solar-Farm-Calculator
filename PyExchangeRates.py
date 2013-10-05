@@ -183,6 +183,7 @@ class Money(object):
         # Throw an exception if an amount is given that isn't a Money object
         else:
             raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
+    
 
     def __sub__(self, other):
         ''' Subtracts two currencies together. The resulting currency is United States Dollars'''
