@@ -14,7 +14,7 @@ gridLat = -43.521543
 gridLong = 172.571075
 
 startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2014, 1, 1)
+endDate = datetime.date(2013, 6, 1)
 
 # Get the site information from the Reverse Geocode
 code = ReverseGeocode.get_country_code(siteLat, siteLong)
@@ -34,7 +34,7 @@ siteToGXP = calcLength(siteLat, siteLong, gridLat, gridLong)
 panel = PVPanel(voltage=30.5, efficiency=15, degradationRate=0.4, area=1.63, cost=50,
 	currency='NZD')
 
-module = PVModule(panelType=panel, panelNum=20)
+module = PVModule(panelType=panel, panelNum=30)
 array = PVArray(moduleType=module, moduleNum=7, arrayAngle=45)
 
 MATERIAL_CU = Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
@@ -62,7 +62,7 @@ financial = Financial(maintenance=30000, miscExpenses=(500000+500000), interestR
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-                       numThreads=100, simulationTimestepMins=60)
+                       numThreads=50, simulationTimestepMins=20)
 
 
 results = simulation.run()
@@ -85,18 +85,22 @@ def FinancialFormatter(x, pos):
 
     return format
 
+def movingaverage(interval, window_size):
+    window = numpy.ones(int(window_size))/float(window_size)
+    return numpy.convolve(interval, window, 'same')
+
 formatter = FuncFormatter(FinancialFormatter)
 
 plt.figure(1)
 plt.subplot(311)
-plt.plot(powerResults['days'], powerResults['averagePower'])
-plt.title('Average output power being supplied to the Grid')
-plt.ylabel('Power (kW)')
+plt.plot(powerResults['days'], powerResults['electricalEffciency'])
+plt.title('Electrical efficiency of the PV farm')
+plt.ylabel('Efficiency (%)')
 
 plt.subplot(312)
-plt.plot(powerResults['days'], powerResults['electricalEffciency'], 'g')
-plt.title('Electrical efficiency of the PV farm at GEP')
-plt.ylabel('Efficiency (%)')
+plt.plot(powerResults['days'], powerResults['electricalEnergy'], 'g')
+plt.title('Electrical energy of the PV farm at GEP')
+plt.ylabel('Energy (kWh)')
 
 plt.subplot(313)
 plt.plot(powerResults['days'], powerResults['totalEffciency'], 'r')
