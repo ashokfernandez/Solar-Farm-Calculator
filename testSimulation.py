@@ -12,7 +12,7 @@ gridLat = -43.521543
 gridLong = 172.571075
 
 startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2023, 1, 1)
+endDate = datetime.date(2015, 1, 1)
 
 # Get the site information from the Reverse Geocode
 code = ReverseGeocode.get_country_code(siteLat, siteLong)
@@ -27,7 +27,8 @@ temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']
 siteToGXP = calcLength(siteLat, siteLong, gridLat, gridLong)
 
 
-panel = PVPanel(voltage=30.5, efficiency=0.15, degradationRate=0.4, area=1.63, cost=50)
+panel = PVPanel(voltage=30.5, efficiency=15, degradationRate=0.4, area=1.63, cost=50, currency='NZD')
+
 module = PVModule(panelType=panel, panelNum=20)
 array = PVArray(moduleType=module, moduleNum=7, arrayAngle=45)
 
@@ -35,17 +36,21 @@ MATERIAL_CU = Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
 MATERIAL_AL = Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
 
 dcCable = DCCable(diameter=20, material=MATERIAL_CU, length=100, costPerMeter=100, depRate=0)
-ac1Cable = AC1Cable(diameter=6, material=MATERIAL_AL, length=100, costPerMeter=100, depRate=0)
-ac2Cable = GEPLine(strandNum=5, diameter=2, material=MATERIAL_AL, length=siteToGXP, costPerMeter=100, depRate=0)
+ac1Cable = AC1Cable(strandNum=5, diameter=6, material=MATERIAL_AL, length=100, costPerMeter=100, depRate=0)
+ac2Cable = AC2Cable(strandNum=5, diameter=2, material=MATERIAL_AL, length=siteToGXP, costPerMeter=100, depRate=0)
 
-inverter = Inverter(powerFactor=0.95, efficiency=0.85, voltage=400, cost=1000, depRate=0)
-transformer = Transformer(voltage=11e3, efficiency=0.95, VARating=1, cost=1000, depRate=0, scrap=500)
+inverter = Inverter(powerFactor=0.95, efficiency=95, voltage=400, cost=1000, depRate=0)
+transformer = Transformer(voltage=11e3, efficiency=98, VARating=1, cost=1000, depRate=0, scrapValue=500)
+
+circuitBreaker = CircuitBreaker(cost=1000)
 
 site = Site(transformerNum=3, arrayNum=30, latitude=siteLat, longitude=siteLong, circuitBreakerNum=15, inverterNum=10, temperature=temperature, landPrice=10000000, landAppRate=1.03)
 
+financial = Financial(maintenance=30000, labour=500000, miscCapital=500000, depRate = 6, selling = 0.2)
+
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
-	                   GEPLine=ac2Cable, CircuitBreaker=None, Site=site, 
+	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
                        numThreads=50, simulationTimestepMins=20)
 
 simulation.run()

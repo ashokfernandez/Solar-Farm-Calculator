@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy
 import time
 import datetime
+import PyExchangeRates
 
 # For the progress bar in the console when the scraping operation is happening
 from time import sleep
@@ -41,38 +42,42 @@ def calcLength(lat1, lng1, lat2, lng2):
 
     return length
 
-def calcOptimumAngle(directIrr, site):
+def calcOptimumAngle(directIrr, siteLat):
 
-    testAngle = [x * 0.1 for x in range(0, 90)]  # [0:0.1:90] specifices angle between 0 and 90 degrees
-    angleLength = len(testAngle) # length of test angle array
+    # testAngle = [x * 0.1 for x in range(0, 90)]  # [0:0.1:90] specifices angle between 0 and 90 degrees
+    # angleLength = len(testAngle) # length of test angle array
     
-    meanIrr = list(range(angleLength)) # init array for length for mean irradiance
+    # meanIrr = list(range(angleLength)) # init array for length for mean irradiance
 
-    # iterates through each angle and calculates the mean irradiance for that year
-    for i in range(angleLength):
-        yearlyIrradiance = []
+    # # iterates through each angle and calculates the mean irradiance for that year
+    # for i in range(angleLength):
+    #     yearlyIrradiance = []
 
-        for j in range(365):
-            # This simulates a year of how much irradiance is incident on a panel surface.
+    #     for j in range(365):
+    #         # This simulates a year of how much irradiance is incident on a panel surface.
             
-            # arbitary angle that is used for calculating the irradiance
-            argRadians = math.radians(360/365*(284 + j))
-            # same as above for the next 3 lines
-            a = 90 - site.getLatitude() + 23.45 * math.sin(argRadians)
-            argRadians_1 = math.radians(a + testAngle[i])
-            argRadians_2 = math.radians(a)
+    #         # arbitary angle that is used for calculating the irradiance
+    #         argRadians = math.radians(360/365*(284 + j))
+    #         # same as above for the next 3 lines
+    #         a = 90 - site.getLatitude() + 23.45 * math.sin(argRadians)
+    #         argRadians_1 = math.radians(a + testAngle[i])
+    #         argRadians_2 = math.radians(a)
 
-            # Calculates the irradiance on the panel for a day
-            yearlyIrradiance.append(directIrr[j] * math.sin(argRadians_1) / math.sin(argRadians_2))
+    #         # Calculates the irradiance on the panel for a day
+    #         yearlyIrradiance.append(directIrr[j] * math.sin(argRadians_1) / math.sin(argRadians_2))
         
-        # Take the mean irradiance and stores within an array
-        meanIrr[i] = numpy.mean(yearlyIrradiance)
+    #     # Take the mean irradiance and stores within an array
+    #     meanIrr[i] = numpy.mean(yearlyIrradiance)
     
-    # Takes the angle with the highest average irradiance
-    ind = meanIrr.index(max(meanIrr))
+    # # Takes the angle with the highest average irradiance
+    # ind = meanIrr.index(max(meanIrr))
 
-    #the optimum angle for solar panel
-    opAngle = testAngle[ind]
+    # #the optimum angle for solar panel
+    # opAngle = testAngle[ind]
+
+    # Taken from "Interconnecting Issues of PV/Wind Hybrid System with Electric Utility, 2011"
+    declinationAngle = 23.45 * math.sin(360 * (284 + 30) / 365)
+    monthlyBestTiltAngle = siteLat - declinationAngle
 
     return opAngle
 
@@ -89,6 +94,34 @@ def calcCableResistance(cable, temperature):
     return resistance
 
 # -------------------------------------------------------------------------------------------------------------------
+# ASSET SUPERCLASS
+# -------------------------------------------------------------------------------------------------------------------
+class Asset(object):
+    ''' Asset superclass for PV farm components. Contains the financial data relating to the asset '''
+    exchange = PyExchangeRates.Exchange('843ce8fdc22c47779fb3040c2ba9a586')
+
+    def __init__(self, cost, currency, depRate = 0):
+        ''' Initialise the asset superclass object '''
+        self.cost = self.exchange.withdraw(cost, currency)   # Cost (currency/unit)
+        self.depRate = depRate                               # Asset deprecation rate (%)
+
+    def getCost(self):
+        ''' Return the cost of the asset '''
+        return self.cost
+
+    def getDepreciatedValue(self, timedelta):
+        ''' Returns the assets value factoring in depreciation over the given time'''
+        return self.cost*(1-self.depRate/(365*100))**timedelta # converts depreciation rate to per day and timedelta has to be num days
+
+    def getDepRate(self):
+        ''' Return the asset depreciation rate of the asset '''
+        return self.depRate
+
+    def getCurrency(self):
+        ''' Return the currency of the asset's cost '''
+        return self.cost.getCurrencyKey()
+
+# -------------------------------------------------------------------------------------------------------------------
 # SOLAR PANELS
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -103,9 +136,9 @@ def calcCableResistance(cable, temperature):
 # panelDepRate = 20 # Panel depreciation rate (% per year)
 
 
-class PVPanel(object):
+class PVPanel(Asset):
     ''' Class to store information relating to a solar PV panel '''
-    def __init__(self, voltage, efficiency, degradationRate, area, cost, depRate = 0):
+    def __init__(self, voltage, efficiency, degradationRate, area, cost, currency = 'USD', depRate = 0):
         ''' Initialise a PV panel object '''
         self.voltage = voltage                  # Panel rated voltage (V)
         self.efficiency = efficiency            # Panel rated efficiency (%)
@@ -113,16 +146,15 @@ class PVPanel(object):
         self.area = area                        # Panel surface area (m^2)
 
         # Financial properties
-        self.cost = cost                        # Cost (currency/unit)
-        self.depRate = depRate                  # Asset deprecation rate (%)
+        super(PVPanel, self).__init__(cost, currency, depRate)
 
     def getVoltage(self):
         ''' Return the panel voltage '''
         return self.voltage
 
     def getEfficiency(self):
-        ''' Return the panel efficiency '''
-        return self.efficiency
+        ''' Return the panel efficiency between 0 and 1 (converts from a percentage) '''
+        return self.efficiency / 100.0
 
     def getDegradationRate(self):
         ''' Return the panel asset degradation rate '''
@@ -132,13 +164,22 @@ class PVPanel(object):
         ''' Return the panel surface area '''
         return self.area
 
-    def getCost(self):
-        ''' Return the cost of the panel '''
-        return self.cost
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(PVPanel, self).getCost()
 
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the panel '''
-        return self.depRate
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(PVPanel, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(PVPanel, self).getDepRate()
+
+    # def getCurrency(self):
+    #     ''' Return the currency of the asset's cost '''
+    #     return self.getCost().getCurrencyKey()
 
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR MODULE
@@ -148,13 +189,16 @@ class PVPanel(object):
 # moduleNum = 20 # Number of solar panels in a module
 # solarVoltage = panelVoltage * moduleNum
 
-class PVModule(object):
+class PVModule(Asset):
     ''' Class to store information relating to a solar PV module. A module contains PV panels '''
     def __init__(self, panelType, panelNum):
         ''' Initialise a PV module object '''
         self.panelType = panelType      # Type of panel within the module
         self.panelNum = panelNum        # Number of panels within the module
         self.voltage = None             # Total voltage of the module (panels connected in series)
+
+        # Financial properties
+        super(PVModule, self).__init__(panelType.getCost() * panelNum, panelType.getCurrency(), panelType.getDepRate())
         self.__calculateModuleVoltage()
 
     def __calculateModuleVoltage(self):
@@ -170,8 +214,25 @@ class PVModule(object):
         return self.voltage
 
     def getArea(self):
-        ''' Return total panel area of a module '''
+        '''Calculates the total area of the panels in m^2'''
         return self.panelType.getArea() * self.panelNum
+
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(PVModule, self).getCost()
+
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(PVModule, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(PVModule, self).getDepRate()
+
+    # def getCurrency(self):
+    #     ''' Return the currency of the asset's cost '''
+    #     return self.getCost().getCurrencyKey()
 
 # -------------------------------------------------------------------------------------------------------------------
 # SOLAR ARRAY
@@ -182,7 +243,7 @@ class PVModule(object):
 # arrayAngle = 45 # Angle from panel to horizontal
 # useOptimumAngle = 1
 
-class PVArray(object):
+class PVArray(Asset):
     ''' Class to store the information relating to a PV array. An array contains PV modules '''
     def __init__(self, moduleType, moduleNum, arrayAngle):
         ''' Initialise a PV array object '''
@@ -190,6 +251,9 @@ class PVArray(object):
         self.moduleNum = moduleNum      # Number of modules in the array in parallel connection
         self.angle = arrayAngle         # Angle of the PV panels
         self.voltage = None             # Array voltage
+
+        # Financial properties
+        super(PVArray, self).__init__(moduleType.getCost() * moduleNum, moduleType.getCurrency(), moduleType.getDepRate())
         self.__CalculateArrayVoltage()
 
     def __CalculateArrayVoltage(self):
@@ -215,6 +279,20 @@ class PVArray(object):
     def getArea(self):
         '''Calculates the total area of the panels in m^2'''
         return self.moduleType.getArea() * self.moduleNum
+
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(PVArray, self).getCost()
+
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(PVArray, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(PVArray, self).getDepRate()
+
 # -------------------------------------------------------------------------------------------------------------------
 # MATERIAL
 # -------------------------------------------------------------------------------------------------------------------
@@ -248,17 +326,16 @@ class Material(object):
 # DCcostPerMeter = 100 # Cost of DC cable per meter
 # DCDepRate = 6 # DC cable depreciation rate (# per year)
 
-class DCCable(object):
+class DCCable(Asset):
     ''' Class to store the information relating to the DC cable between the PV array and the inverter '''
-    def __init__(self, diameter, material, length, costPerMeter, depRate):
+    def __init__(self, diameter, material, length, costPerMeter, currency = 'USD', depRate = 0):
         ''' Initialise a DC cable object '''
         self.diameter = diameter            # Diameter of the cable (mm)
         self.material = material            # Material of the conductor within the cable (e.g. Cu, Al)
         self.length = length                # Length of the total amount of cable
 
         # Financial properties
-        self.costPerMeter = costPerMeter    # Cost per meter (currency/m)
-        self.depRate = depRate              # Asset depreciation rate (%/year)
+        super(DCCable, self).__init__(costPerMeter * length, currency, depRate)
 
     def getDiameter(self):
         ''' Return the cable diameter '''
@@ -272,17 +349,18 @@ class DCCable(object):
         ''' Return the length of the cable '''
         return self.length
 
-    def getCostPerMeter(self):
-        ''' Return the cost of the DC cable '''
-        return self.cost
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(DCCable, self).getCost()
 
-    def getCost(self):
-        ''' Return the total cost of cable '''
-        return self.costPerMeter * self.length
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(DCCable, self).getDepreciatedValue()
 
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the cable '''
-        return self.depRate
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(DCCable, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
 # INVERTER
@@ -297,37 +375,41 @@ class DCCable(object):
 # InvCost = 10000 # Cost of the inverter/s
 # InvDepRate = 7 # Inverter depreciation rate (# per year)
 
-class Inverter(object):
+class Inverter(Asset):
     ''' Class to store the information relating to the Inverter '''
-    def __init__(self, powerFactor, efficiency, voltage, cost, depRate):
+    def __init__(self, powerFactor, efficiency, voltage, cost, currency = 'USD', depRate = 0):
         '''Initialise an inverter object '''
         self.powerFactor = powerFactor  # Power factor of the inverter
         self.efficiency = efficiency    # Efficiency of the inverter
         self.voltage = voltage          # Output voltage of the inverter to the transformer
 
         # Financial properties
-        self.cost = cost                # Unit cost of the inverter (currency/unit)
-        self.depRate = depRate          # Asset depreciation rate (%/year)
+        super(Inverter, self).__init__(cost, currency, depRate)
 
     def getPowerFactor(self):
         ''' Return the power factor '''
         return self.powerFactor
 
     def getEfficiency(self):
-        ''' Return the efficiency of the inverter '''
-        return self.efficiency
+        ''' Return the efficiency of the inverter between 0 and 1 '''
+        return self.efficiency / 100.0
 
     def getVoltage(self):
         ''' Return the output voltage of the inverter '''
         return self.voltage
 
-    def getCost(self):
-        ''' Return the unit cost of the inverter '''
-        return self.cost
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(Inverter, self).getCost()
 
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the inverter '''
-        return self.depRate
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(Inverter, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(Inverter, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
 # Inv-Tx Lines (AC1 Cables)
@@ -342,18 +424,22 @@ class Inverter(object):
 # AC1Cost = 100 # Cost of cable per meter
 # AC1DepRate = 6 # Inv-Tx cable depreciation rate (# per year)
 
-class AC1Cable(object):
+class AC1Cable(Asset):
     ''' Class that stores the information relating to the AC cable
     between the inverter and the transformer '''
-    def __init__(self, diameter, material, length, costPerMeter, depRate):
+    def __init__(self, strandNum, diameter, material, length, costPerMeter, currency = 'USD', depRate = 0):
         ''' Initialise the AC cable object '''
+        self.strandNum = strandNum
         self.diameter = diameter
         self.material = material
         self.length = length
 
         # Financial properties
-        self.getCostPerMeter = costPerMeter
-        self.depRate = depRate
+        super(AC1Cable, self).__init__(costPerMeter * length, currency, depRate)
+
+    def getStrandNum(self):
+        ''' Return the number of strands for the AC1 cable '''
+        return self.strandNum
 
     def getDiameter(self):
         ''' Return the cable diameter '''
@@ -367,17 +453,18 @@ class AC1Cable(object):
         ''' Return the length of the cable '''
         return self.length
 
-    def getCostPerMeter(self):
-        ''' Return the cost per meter of the cable '''
-        return self.costPerMeter
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(AC1Cable, self).getCost()
 
-    def getCost(self):
-        ''' Return the total cost of the cable '''
-        return self.costPerMeter * self.length
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(AC1Cable, self).getDepreciatedValue()
 
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the cable '''
-        return self.depRate
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(AC1Cable, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
 # TRANSFORMER
@@ -393,45 +480,49 @@ class AC1Cable(object):
 # TxDepRate = 6 # Transformer depreciation rate (# per year)
 # TxScrap = 30000 # Transformer scrap value
 
-class Transformer(object):
+class Transformer(Asset):
     ''' Class that stores the information relating to a transformer '''
-    def __init__(self, voltage, efficiency, VARating, cost, depRate, scrap):
+    def __init__(self, voltage, efficiency, VARating, cost, currency = 'USD', depRate = 0, scrapValue = 0):
         ''' Initialise the transformer object '''
         self.voltage = voltage
         self.efficiency = efficiency
         self.VARating = VARating
 
         # Financial properties
-        self.cost = cost
-        self.depRate = depRate
-        self.scrap = scrap
+        super(Transformer, self).__init__(cost, currency, depRate)
+        self.scrapValue = scrapValue
 
     def getVoltage(self):
         ''' Return the high voltage side of the transformer '''
         return self.voltage
 
     def getEfficiency(self):
-        ''' Return the efficiency of the transformer '''
-        return self.efficiency
+        ''' Return the efficiency of the transformer between 0 and 1 '''
+        return self.efficiency / 100.0
 
     def getVARating(self):
         ''' Return the rating of the transformer (MVA) '''
         return self.VARating
 
-    def getCost(self):
-        ''' Return the unit cost of the transformer '''
-        return self.cost
-
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the transformer '''
-        return self.depRate
-
-    def getScrap(self):
+    def getScrapValue(self):
         ''' Return the scrap value of the cable '''
-        return self.scrap
+        return self.scrapValue
+
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(Transformer, self).getCost()
+
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(Transformer, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(Transformer, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
-# GEP LINES
+# AC2 LINES (TX Line)
 # -------------------------------------------------------------------------------------------------------------------
 
 # # Deprecated variables
@@ -446,19 +537,18 @@ class Transformer(object):
 # TranLineCost = 1000 # Cost of building the transmission line per kilometer
 # AC2DepRate = 6 # Depreciation rate of the GXP line (# per year)
 
-class GEPLine(object):
+class AC2Cable(Asset):
     ''' Class that stores the information relating the transmission line between the solar farm and the grid entry
     point '''
-    def __init__(self, strandNum, diameter, material, length, costPerMeter, depRate):
+    def __init__(self, strandNum, diameter, material, length, costPerMeter, currency = 'USD', depRate = 0):
         ''' Initialise the GEP object '''
         self.strandNum = strandNum
         self.diameter = diameter
         self.material = material
-        self.length = length
+        self.length = length        # Length of cable in meters
         
         # Financial properties
-        self.costPerMeter = costPerMeter
-        self.depRate = depRate
+        super(AC2Cable, self).__init__(costPerMeter * length, currency, depRate)
 
     def getStrandNum(self):
         ''' Return the number of strands in ACC or ACSR cable '''
@@ -476,36 +566,41 @@ class GEPLine(object):
         ''' Return the length of the strand '''
         return self.length
 
-    def getCostPerMeter(self):
-        ''' Return the cost per meter of the transmission line '''
-        return self.costPerMeter
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(AC2Cable, self).getCost()
 
-    def getCost(self):
-        ''' Return the total cost of the transmission line '''
-        return self.costPerMeter * self.length
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(AC2Cable, self).getDepreciatedValue()
 
-    def getDepRate(self):
-        ''' Return the asset depreciation rate of the transmission line '''
-        return self.depRate
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(AC2Cable, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
 # CIRCUIT BREAKER
 # -------------------------------------------------------------------------------------------------------------------
 
-class CircuitBreaker(object):
+class CircuitBreaker(Asset):
     ''' Class for storing information relating to a  circuit breaker '''
-    def __init__(self, cost, depRate):
+    def __init__(self, cost, currency = 'USD', depRate = 0):
         ''' Initialise the circuit breaker class object '''
-        self.cost = cost
-        self.depRate = depRate
+        super(CircuitBreaker, self).__init__(cost, currency, depRate)
 
-    def getCost(self):
-        ''' Return the cost of a circuit breaker '''
-        return self.cost
+    # Asset superclass methods
+    # def getCost(self):
+    #     ''' Return the cost of the asset '''
+    #     return super(CircuitBreaker, self).getCost()
 
-    def getDepRate(self):
-        ''' Return the depreciation rate of the circuit breaker '''
-        return self.depRate
+    # def getDepreciatedValue(self, timedelta):
+    #     ''' Returns the assets value factoring in depreciation over the given time'''
+    #     return super(CircuitBreaker, self).getDepreciatedValue()
+
+    # def getDepRate(self):
+    #     ''' Return the asset depreciation rate of the asset '''
+    #     return super(CircuitBreaker, self).getDepRate()
 
 # -------------------------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
@@ -607,25 +702,25 @@ class Site(object):
 
 class Financial(object):
     ''' Class that stores the information relating to the finanical data that is independent of the solar farm '''
-    def __init__(self, maintenance, labour, capital, depRate, selling):
+    def __init__(self, maintenance, labour, miscCapital, depRate, selling):
         ''' Initialise the Financial object '''
         self.maintenance = maintenance      # Maintaince budget per year
         self.labour = labour                # Initial labour costs to build site
-        self.capital = capital              # Initial capital costs
+        self.miscCapital = miscCapital      # Initial capital costs ?? Is this the miscCapitalCosts as above ??
         self.depRate = depRate              # Depreciation rate (%/year)
         self.selling = selling              # Selling rate of power (currency/kWh)
 
-    def getMaintenance(self):
+    def getDailyMaintenance(self):
         ''' Return the maintenance budget per year '''
-        return self.maintenance
+        return self.maintenance / 365.0
 
     def getLabour(self):
         ''' Return the labour costs '''
         return self.labour
 
-    def getCapital(self):
+    def getMiscCapital(self):
         ''' Return the capital costs '''
-        return self.capital
+        return self.miscCapital
 
     def getDepRate(self):
         ''' Return the depreciation rate '''
@@ -706,13 +801,14 @@ class thread_SimulateDay(threading.Thread):
             TxOutVolt = simDay.parameters['Transformer'].getVoltage()
 
             AC1Cable = simDay.parameters['AC1Cable']
+            AC1StrandNum = simDay.parameters['AC1Cable'].getStrandNum()
             # AC1Diameter = simDay.parameters['AC1Cable'].getDiameter()
             # AC1Length = simDay.parameters['AC1Cable'].getLength()
             
-            AC2Cable = simDay.parameters['GEPLine']
-            # AC2StrandDiameter = simDay.parameters['GEPLine'].getDiameter()
-            # AC2Length = simDay.parameters['GEPLine'].getLength()
-            AC2StrandNum = simDay.parameters['GEPLine'].getStrandNum()
+            AC2Cable = simDay.parameters['AC2Cable']
+            # AC2StrandDiameter = simDay.parameters['AC2Cable'].getDiameter()
+            # AC2Length = simDay.parameters['AC2Cable'].getLength()
+            AC2StrandNum = simDay.parameters['AC2Cable'].getStrandNum()
             
             lat = simDay.parameters['Site'].getLatitude()
             lng = simDay.parameters['Site'].getLongitude()
@@ -725,9 +821,10 @@ class thread_SimulateDay(threading.Thread):
 
             # Running totals for the total output energy effciencies at each timestep
             energyOutput = 0
-            totalEffeciency = 0
+            totalEffciency = 0
             elecEff = 0
             sunnyTime = 0
+            powerRunVal = 0
 
             # Simulate the irradiance over a day in half hour increments
             for i in range(STEPS_PER_DAY):
@@ -745,7 +842,7 @@ class thread_SimulateDay(threading.Thread):
         
                 # DC cable calcs
                 DCresistance = calcCableResistance(DCcable, temperature)
-                DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage
+                DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage         # ----------------- DC_CURRENT
                 DCloss = 2 * DCcurrent**2 * DCresistance
                 DCoutput = solarOutput - DCloss
             
@@ -753,9 +850,10 @@ class thread_SimulateDay(threading.Thread):
                 invOutput = DCoutput * InvEff
 
                 # 3 Phase AC Cables to Tx calcs
-                AC1resistance = calcCableResistance(AC1Cable, temperature)
-                IAC1 = invOutput / (math.sqrt(3) * InvPowerFactor*InvOutVolt)
-                AC1loss = 3 * IAC1**2 * AC1resistance
+                AC1StrandResistance = calcCableResistance(AC1Cable, temperature)
+                AC1TotalResistance = AC1StrandResistance / AC1StrandNum
+                IAC1 = invOutput / (math.sqrt(3) * InvPowerFactor*InvOutVolt)                       # ------------------ AC_CURRENT_1
+                AC1loss = 3 * IAC1**2 * AC1TotalResistance
                 AC1Output = invOutput - AC1loss
                 
                 # Transformer calcs
@@ -764,25 +862,31 @@ class thread_SimulateDay(threading.Thread):
                 # 3 Phase tranmission lines to GXP calcs
                 strandResistance = calcCableResistance(AC2Cable, temperature)
                 totalResistance = strandResistance / AC2StrandNum
-                IAC2 = TxOut / (math.sqrt(3) * InvPowerFactor * TxOutVolt)
+                IAC2 = TxOut / (math.sqrt(3) * InvPowerFactor * TxOutVolt)                         # --------------------- AC_CURRENT_2
                 AC2loss = 3 * IAC2**2 * totalResistance
                 AC2Output = TxOut - AC2loss
+
+
                 
                 # Final outputs
                 if irradiance > 0:
                     sunnyTime += 1
-                    totalEffeciency += (AC2Output / (irradiance * totalArea)) * 100
+                    totalEffciency += (AC2Output / (irradiance * totalArea)) * 100
                     elecEff += (AC2Output / solarOutput) * 100
                     energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
+                    powerRunVal += AC2Output
 
 
             # Average the effciencies over the day
-            totalEffeciency /= sunnyTime
+            sunnyTime = float(sunnyTime)
+            totalEffciency /= sunnyTime
             elecEff /= sunnyTime
+            powerRunVal /= sunnyTime
             
             # Save the output data to the SimulationDay object
+            simDay.averagePower = powerRunVal
             simDay.electricalEffciency = elecEff
-            simDay.totalEffeciency = totalEffeciency
+            simDay.totalEffciency = totalEffciency
             simDay.electricalEnergy = energyOutput
 
             # Push the completed simulation day to the output queue and tick it off the input queue
@@ -798,6 +902,10 @@ class SimulationDay(object):
         self.parameters = parameters
     
         # Outputs are stored here
+        self.peakCurrent_DC = 0
+        self.peakCurrent_AC1 = 0
+        self.peakCurrent_AC2 = 0
+        self.averagePower = 0
         self.electricalEnergy = 0
         self.electricalEffciency = 0
         self.totalEffciency = 0
@@ -832,11 +940,10 @@ class SimulationDay(object):
         return self.totalEffciency
 
 
-
 class Simulation(object):
     '''Object to contain the simulation parameters'''
     def __init__(self, start, finish, PVPanel, PVModule, PVArray, DCCable, 
-                 Inverter, AC1Cable, Transformer, GEPLine, CircuitBreaker, Site, 
+                 Inverter, AC1Cable, Transformer, AC2Cable, CircuitBreaker, Site, Financial,
                  numThreads=5, simulationTimestepMins=30):
         '''Initilise the simulation'''
         self.start = start
@@ -856,7 +963,7 @@ class Simulation(object):
             'Inverter': Inverter,
             'AC1Cable': AC1Cable, 
             'Transformer': Transformer, 
-            'GEPLine': GEPLine, 
+            'AC2Cable': AC2Cable, 
             'CircuitBreaker': CircuitBreaker, 
             'Site': Site
         }
@@ -867,8 +974,12 @@ class Simulation(object):
 
         print "Initialising %i day simulation" % self.days
 
+        print "Start date: ", self.start
+        print "Finish date: ", self.finish
+
         # Queue up the list of days to simulate
-        dates = [self.start - datetime.timedelta(days=x) for x in range(0,self.days)]
+        dates = [self.start + datetime.timedelta(days=x) for x in range(0,self.days)]
+
         for day in dates:
             simulationDay = SimulationDay(day, self.parameters)
             self.inputQueue.put(simulationDay)
@@ -888,8 +999,49 @@ class Simulation(object):
     def setFinishDate(self, date):
         self.finish = date
 
-    def run(self):
-        ''' Runs the simulation'''
+    def __runFinancial(self, powerOutput):
+        '''Runs the finicial simulation, requires the results from power flow simulation'''
+        # The two arrays below are assumed to be from the input powerOutput
+        days = []
+        electricalEnergy = []
+
+        netAssetValue = []
+        accumulativeExpenses = []
+        accumulativeRevenue = []
+        totalRevenue = []
+
+
+        revenueAccumulator = 0
+        expensesAccumulator = 0
+        initialExpenses = netAssetValue[0] + Financial.getLabour()
+
+        for i in range(len(days)):
+            deltaTime = (days[i] - self.start).days
+
+            dailyCapitalWorth = Site.getLandPrice() * (1 + Site.getLandAppRate()/(365*100))**deltaTime # Worth of the land
+            dailyCapitalWorth += PVArray.Asset.getDepreciatedValue(deltaTime) # made the assumption only one input required (works out total panel worth)
+            dailyCapitalWorth += 2 * DCCable.Asset.getDepreciatedValue(deltaTime) * DCCable.getLength()# Worth of DC cables
+            dailyCapitalWorth += Inverter.Asset.getDepreciatedValue(deltaTime) * Site.inverterNum # Worth of the inverters
+            dailyCapitalWorth += 3 * AC1Cable.Asset.getDepreciatedValue(deltaTime) * AC1Cable.getLength() # Worth of AC1 cables
+            dailyCapitalWorth += Transformer.Asset.getDepreciatedValue() * Site.transfomerNum # Worth of the transfomers
+            dailyCapitalWorth += 3 * AC2Cable.Asset.getDepreciatedValue() * AC2Cable.getLength() # Worth of the GEP transmission line
+            capitalWorth[i] +=  Financial.Asset.getDepreciatedValue() # This has to work out the misc capital cost worth
+
+            netAssetValue.append(dailyCapitalWorth)
+            
+            dailyExpenses = Financial.getDailyMaintenance()
+            expensesAccumulator += dailyExpenses
+            accumulativeExpenses.append(initialExpenses + expensesAccumulator)
+            
+            dailyRevenue = 0 # Calculate revenue for the day
+            revenueAccumulator += dailyRevenue
+            accumulativeRevenue.append(revenueAccumulator)
+
+
+
+
+    def __runPower(self):
+        ''' Runs the power flow simulation'''
 
         numberOfSimulationDays = self.inputQueue.qsize()
 
@@ -929,6 +1081,9 @@ class Simulation(object):
             resultDays.append(self.outputQueue.get())
             self.outputQueue.task_done()
 
+        #print "Start date before sorting: ", resultDays[0].date
+        #print "Finish date before sorting: ", resultDays[-1].date
+
         print "Finished Dequeueing results"
 
         # Sort the resultant simulation dates into order
@@ -936,31 +1091,47 @@ class Simulation(object):
 
         print "Sorted results"
 
+        #print "Start date after sorting: ", resultDays[0].date
+        #print "Finish date after sorting: ", resultDays[-1].date
+
         days = []
         electricalEnergy = []
         totalEffciency = []
         electricalEffciency = []
+        averagePower = []
 
         for day in resultDays:
             days.append(day.date)
-            electricalEnergy.append(day.electricalEnergy)
+            electricalEnergy.append(day.electricalEnergy / 1000) # Converts energy to kWh
             electricalEffciency.append(day.electricalEffciency)
             totalEffciency.append(day.totalEffciency)
+            averagePower.append(day.averagePower / 1000) # Converts power to kW
 
-        print "split data"
+        print "Split data"
 
         plt.figure(1)
         plt.subplot(311)
-        plt.plot(days, electricalEnergy)
+        plt.plot(days, averagePower)
+        plt.title('Average output power being supplied to the Grid')
+        plt.ylabel('Energy (kWh)')
 
         plt.subplot(312)
         plt.plot(days, electricalEffciency, 'g')
+        plt.title('Electrical efficiency of the PV farm at GEP')
+        plt.ylabel('Efficiency (%)')
 
         plt.subplot(313)
         plt.plot(days, totalEffciency, 'r')
+        plt.title('Total efficiency of the PV farm')
+        plt.ylabel('Efficiency (%)')
         
         plt.show()
 
+    def run(self):
+        self.__runPower()
+        # financialData = self.__runFinancial(powerData)
+
+        # return (powerData, financialData)
 
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -1022,7 +1193,7 @@ class Simulation(object):
 
 
 
-#-------------Finicial-----------------------------------------------#
+#-------------Financial-----------------------------------------------#
 # if day == startDay and i != 1:
 #     # Calculate finicial data
 #     year = year + 1
