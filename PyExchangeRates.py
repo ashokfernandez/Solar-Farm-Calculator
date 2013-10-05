@@ -174,7 +174,7 @@ class Money(object):
 
     def __add__(self, other):
         ''' Adds two currencies together. The resulting currency is United States Dollars'''
-        if isinstance(other, Money):
+        if isinstance(other, Money):            
             firstAmount = self.convert(UNITED_STATES_DOLLARS_KEY).getAmount()
             secondAmount = other.convert(UNITED_STATES_DOLLARS_KEY).getAmount()
             finalAmount = firstAmount + secondAmount
@@ -183,7 +183,10 @@ class Money(object):
         # Throw an exception if an amount is given that isn't a Money object
         else:
             raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
+            print other
     
+    # Addition should be the same no matter the object's order
+    __radd__ = __add__
 
     def __sub__(self, other):
         ''' Subtracts two currencies together. The resulting currency is United States Dollars'''
@@ -196,6 +199,9 @@ class Money(object):
         # Throw an exception if an amount is given that isn't a Money object
         else:
             raise TypeError("unsupported operand type(s) for -: '%s' and '%s'" % (type(self), type(other)))
+    
+    # Subtraction should be the same no matter the object's order
+    __rsub__ = __sub__
 
     def __mul__(self, other):
         ''' Multiplies currencies together. The resulting currency is United States Dollars by default'''
@@ -226,8 +232,8 @@ class Money(object):
             finalAmount = firstAmount / secondAmount
             return Money(finalAmount, UNITED_STATES_DOLLARS_KEY, self.exchange)
 
-        # Allow scalar multiplication 
-        elif isinstance(other,int) or isinstance(other,float):
+        # Allow scalar division
+        elif isinstance(other,int) or isinstance(other,float) or isinstance(other,long):
             currentAmount = self.getAmount()
             newAmount = currentAmount / other
             return Money(newAmount, UNITED_STATES_DOLLARS_KEY, self.exchange)

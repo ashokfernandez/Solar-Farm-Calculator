@@ -174,7 +174,7 @@ class PVModule(Asset):
         self.voltage = None             # Total voltage of the module (panels connected in series)
 
         # Financial properties
-        super(PVModule, self).__init__(panelType.getCost() * panelNum, panelType.getCurrency(),
+        super(PVModule, self).__init__(panelType.getCost().getAmount() * panelNum, panelType.getCurrency(),
             panelType.getDepRate())
         self.__calculateModuleVoltage()
 
@@ -207,7 +207,7 @@ class PVArray(Asset):
         self.voltage = None             # Array voltage
 
         # Financial properties
-        super(PVArray, self).__init__(moduleType.getCost() * moduleNum, moduleType.getCurrency(),
+        super(PVArray, self).__init__(moduleType.getCost().getAmount() * moduleNum, moduleType.getCurrency(),
             moduleType.getDepRate())
         self.__CalculateArrayVoltage()
 
@@ -512,7 +512,11 @@ class Financial(object):
 
     def getCurrentLoanValue(self):
         ''' Returns the current value of the loan '''
-        return self.loan.getAmount()
+        return self.loan
+
+    def amountInBaseCurrency(self, money):
+        ''' Returns the value of a money object in the base currency of the loan'''
+        return money.convert(self.baseCurrency).getAmount()
 
     def getPowerPrice(self):
         ''' Return the selling rate of power '''
@@ -785,10 +789,7 @@ class Simulation(object):
 
         # Sum the costs of all the assets 
         initalCosts = self.parameters['PVArray'].getCost()
-        
-        DCCableCost = (2 * self.parameters['DCCable'].getCost())
-        initalCosts += DCCableCost # initalCosts + (2 * self.parameters['DCCable'].getCost()) # Worth of DC cables
-
+        initalCosts += initalCosts + (2 * self.parameters['DCCable'].getCost()) # Worth of DC cables
         initalCosts += self.parameters['Inverter'].getCost() * self.parameters['Site'].getInverterNum() # Worth of the inverters
         initalCosts += 3 * self.parameters['AC1Cable'].getCost()  # Worth of AC1 cables
         initalCosts += self.parameters['Transformer'].getCost() * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
@@ -805,9 +806,9 @@ class Simulation(object):
         loanValue = []
         accumulativeRevenue = []
 
-        # Variables to accumlate stuff
-        revenueAccumulator = 0
-        expensesAccumulator = 0
+        # Variables to accumlate financial stuff
+        revenueAccumulator = CURRENCY_EXCHANGE.withdraw(0, 'USD')
+        expensesAccumulator = CURRENCY_EXCHANGE.withdraw(0, 'USD')
 
         # Get the initial value of the loan
         initialExpenses = self.parameters['Financial'].getCurrentLoanValue()
@@ -844,6 +845,11 @@ class Simulation(object):
 
             # Save the current loan value
             loanValue.append(self.parameters['Financial'].getCurrentLoanValue())
+
+        # Convert all the results to float arrays in the base currency
+        netAssetValue = [self.parameters['Financial'].amountInBaseCurrency(x) for x in netAssetValue]
+        loanValue = [self.parameters['Financial'].amountInBaseCurrency(x) for x in loanValue]
+        accumulativeRevenue = [self.parameters['Financial'].amountInBaseCurrency(x) for x in accumulativeRevenue]
 
         # Save the simulation results
         self.financialResults = {
@@ -926,38 +932,12 @@ class Simulation(object):
 
 
     def run(self):
+        ''' Runs the power simulation then the financial simulation and returns a dictionary with the
+        results from each '''
         self.__runPower()
         self.__runFinancial()
 
-        plt.figure(1)
-        plt.subplot(311)
-        plt.plot(self.days, self.powerResults['averagePower'])
-        plt.title('Average output power being supplied to the Grid')
-        plt.ylabel('Power (kW)')
-
-        plt.subplot(312)
-        plt.plot(self.days, self.powerResults['electricalEffciency'], 'g')
-        plt.title('Electrical efficiency of the PV farm at GEP')
-        plt.ylabel('Efficiency (%)')
-
-        plt.subplot(313)
-        plt.plot(self.days, self.powerResults['totalEffciency'], 'r')
-        plt.title('Total efficiency of the PV farm')
-        plt.ylabel('Efficiency (%)')
-        
-        plt.figure(2)
-        plt.subplot(311)
-        plt.plot(self.days, self.financialResults['netAssetValue'], 'r')
-        
-        plt.subplot(312)
-        plt.plot(self.days, self.financialResults['accumulativeExpenses'], 'g')
-
-        plt.subplot(313)
-        plt.plot(self.days, self.financialResults['accumulativeRevenue'], 'b')
-
-        plt.show()
-
-        # return (powerData, financialData)
+        return {'power': self.powerResults, 'financial': self.financialResults}
 
 # --------------------------------------------------------------------------------------------------
 # Redundant code

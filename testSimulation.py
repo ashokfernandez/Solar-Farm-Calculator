@@ -1,4 +1,6 @@
 import sys
+from matplotlib.ticker import FuncFormatter
+import matplotlib.pyplot as plt
 from SolarSimulation import *
 import datetime
 import ReverseGeocode 
@@ -12,7 +14,7 @@ gridLat = -43.521543
 gridLong = 172.571075
 
 startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2015, 1, 1)
+endDate = datetime.date(2014, 1, 1)
 
 # Get the site information from the Reverse Geocode
 code = ReverseGeocode.get_country_code(siteLat, siteLong)
@@ -26,7 +28,7 @@ print "Running simulation in %s" % Countries.LONG_CODE_TO_NAME[code]
 temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
 siteToGXP = calcLength(siteLat, siteLong, gridLat, gridLong)
 
-exchange = PyExchangeRates.Exchange('843ce8fdc22c47779fb3040c2ba9a586')
+
 
 
 panel = PVPanel(voltage=30.5, efficiency=15, degradationRate=0.4, area=1.63, cost=50,
@@ -55,11 +57,66 @@ site = Site(transformerNum=3, arrayNum=30, latitude=siteLat, longitude=siteLong,
 	landAppRate=1.03)
 
 financial = Financial(maintenance=30000, miscExpenses=(500000+500000), interestRate = 6,
-					 powerPrice = 0.2, baseCurrency='NZD')
+					 powerPrice = 20, baseCurrency='NZD')
 
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-                       numThreads=100, simulationTimestepMins=120)
+                       numThreads=100, simulationTimestepMins=60)
 
-simulation.run()
+
+results = simulation.run()
+
+powerResults = results['power']
+financialResults = results['financial']
+
+def FinancialFormatter(x, pos):
+    '''Converts a money amount into millions or billions if the value is big enough'''
+    
+    # If under a million, print like normal
+    if x < 1e6:
+    	format = '$%1.1f' % x
+    # Else if under a billion print the amount in millions
+    elif x < 1e9:
+    	format = '$%1.1fM' % (x*1e-6)
+    # Else print as billions
+    else:
+    	format = '$%1.1fB' % (x*1e-9)
+
+    return format
+
+formatter = FuncFormatter(FinancialFormatter)
+
+plt.figure(1)
+plt.subplot(311)
+plt.plot(powerResults['days'], powerResults['averagePower'])
+plt.title('Average output power being supplied to the Grid')
+plt.ylabel('Power (kW)')
+
+plt.subplot(312)
+plt.plot(powerResults['days'], powerResults['electricalEffciency'], 'g')
+plt.title('Electrical efficiency of the PV farm at GEP')
+plt.ylabel('Efficiency (%)')
+
+plt.subplot(313)
+plt.plot(powerResults['days'], powerResults['totalEffciency'], 'r')
+plt.title('Total efficiency of the PV farm')
+plt.ylabel('Efficiency (%)')
+
+plt.figure(2)
+a = plt.subplot(311)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['netAssetValue'])
+plt.title('Net Asset Value')
+
+a = plt.subplot(312)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['loanValue'], 'r')
+plt.title('Loan Value')
+
+a = plt.subplot(313)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['accumulativeRevenue'], 'g')
+plt.title('Accumlative Revenue')
+
+plt.show()
