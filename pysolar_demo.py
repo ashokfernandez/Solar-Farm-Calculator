@@ -13,7 +13,7 @@ panelAngle = 45
 
 
 TIME_STEP = 30
-SIM_LENGTH = 17520
+SIM_LENGTH = 1752
 start = datetime.datetime(2013, 12, 4, 0, 0, 0, 0)
 
 currentDayOfYear = (start - datetime.datetime(2013, 1, 1)).days
@@ -27,6 +27,16 @@ a = 90 - lat + delta
 # Calculates the irradiance on the panel for a day
 argRadians_1 = math.radians(a + panelAngle)
 argRadians_2 = math.radians(a)
+
+scaleFactor = []
+
+for i in range (365):
+	argRadians = math.radians((360 * (284 + i)) / 365.0)
+	delta = 23.45 * math.sin(argRadians)
+	a = 90 - lat + delta
+	argRadians_1 = math.radians(a + panelAngle)
+	argRadians_2 = math.radians(a)
+	scaleFactor.append(math.sin(argRadians_1) / math.sin(argRadians_2))
 
 
 days = []
@@ -46,7 +56,10 @@ for i in range(SIM_LENGTH):
 
 
 plt.figure(1)
-plt.plot(days, radiation, 'g')# , days, irrPanel, 'b')
+plt.plot(days, irrPanel, 'g')
 plt.title('PySolar - Legit or not?')
 plt.ylabel('Solar stuff')
+
+plt.figure(2)
+plt.plot(scaleFactor)
 plt.show()

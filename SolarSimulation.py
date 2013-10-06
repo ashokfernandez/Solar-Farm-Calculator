@@ -46,45 +46,78 @@ def calcLength(lat1, lng1, lat2, lng2):
 
     return length
 
-def calcOptimumAngle(directIrr, siteLat):
+def getDailyEnergy(angle, date, latitude, longitude):
+    '''Returns the total energy of of a day'''
+
+    timeStepMins = 30.0 # time step in minutes
+    minsPerDay = 1440.00  # Minutes in a day (float for dividing)
+
+    timeStep = minsPerDay / float(timeStepMins)
+
+    # Num days into the year
+    yearDay = (datetime.datetime(2013, 1, 1) - date).days + 1
+
+     # arbitary angle that is used for calculating the irradiance
+    argRadians = math.radians(360 / 365 * (284 + yearDay))
+    # same as above for the next 3 lines
+    a = 90 - latitude + 23.45 * math.sin(argRadians)
+    argRadians_1 = math.radians(a + angle)
+    argRadians_2 = math.radians(a)
+
+    # Irrdiance scale factor
+    scaleFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
+
+    # Variable store the total energy in the year
+    dayEnergy = 0
+
+    for i in range(int(timeStep)):
+
+        minutesIntoDay = i * timeStepMins
+        d = date + datetime.timedelta(minutes=minutesIntoDay)
+
+        altitude = Pysolar.GetAltitude(latitude, longitude, d)
+        irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
+
+        dayEnergy += irradiance * scaleFactor * (timeStepMins / 60)
+
+    return dayEnergy
+
+
+def calcOptimumAngle(siteLat, siteLon):
     ''' Calculates the optimum angle of the PV panels based on the latitude of the site. '''
+
     # [0:0.1:90] specifices angle between 0 and 90 degrees
-    # testAngle = [x * 0.1 for x in range(0, 90)]
-    # angleLength = len(testAngle) # length of test angle array
+    testAngle = [x * 0.1 for x in range(0, 900)]
+
+    angleLength = len(testAngle) # length of test angle array
+    # arbitary start day (just need to simulate a year)
+
+    start = datetime.datetime(2013, 1, 1)
+
+    days = [start + datetime.timedelta(days=x) for x in range(0,365)]
     
-    # meanIrr = list(range(angleLength)) # init array for length for mean irradiance
+    
+    yearlyEnergy = []
 
-    # # iterates through each angle and calculates the mean irradiance for that year
-    # for i in range(angleLength):
-    #     yearlyIrradiance = []
-
-    #     for j in range(365):
-    #         # This simulates a year of how much irradiance is incident on a panel surface.
-            
-    #         # arbitary angle that is used for calculating the irradiance
-    #         argRadians = math.radians(360/365*(284 + j))
-    #         # same as above for the next 3 lines
-    #         a = 90 - site.getLatitude() + 23.45 * math.sin(argRadians)
-    #         argRadians_1 = math.radians(a + testAngle[i])
-    #         argRadians_2 = math.radians(a)
-
-    #         # Calculates the irradiance on the panel for a day
-    #         yearlyIrradiance.append(directIrr[j] * math.sin(argRadians_1) / math.sin(argRadians_2))
+    # iterates through each angle and calculates the mean irradiance for that year
+    for i in range(angleLength):
         
-    #     # Take the mean irradiance and stores within an array
-    #     meanIrr[i] = numpy.mean(yearlyIrradiance)
+
+        yearEnergy = 0
+
+        for j in range(365):
+
+            yearEnergy += getDailyEnergy(testAngle[i], days[i], siteLat, siteLon)
+        
+        yearlyEnergy.append(yearlyEnergy)
     
-    # # Takes the angle with the highest average irradiance
-    # ind = meanIrr.index(max(meanIrr))
+    # Takes the angle with the highest average yearly energy
+    ind = yearlyEnergy.index(max(yearlyEnergy))
 
-    # #the optimum angle for solar panel
-    # opAngle = testAngle[ind]
+    #the optimum angle for solar panel
+    opAngle = testAngle[ind]
 
-    # Taken from "Interconnecting Issues of PV/Wind Hybrid System with Electric Utility, 2011"
-    declinationAngle = 23.45 * math.sin(360 * (284 + 30) / 365)
-    monthlyBestTiltAngle = siteLat - declinationAngle
-
-    return monthlyBestTiltAngle
+    return opAngle
 
 def calcCableResistance(cable, temperature):
     ''' Calculates the resistance of a cable given the cable material, ambient temperature,
@@ -191,8 +224,9 @@ class thread_SimulateDay(threading.Thread):
             SIMULATION_TIMESTEP_MINS = self.timestep_mins
             MINS_PER_DAY = 1440.00 # Make it a float so it divides nicely
             STEPS_PER_DAY = int(MINS_PER_DAY / SIMULATION_TIMESTEP_MINS)
-
-            # Simulation parameters
+# --------------------------------------------------------------------------------------------------
+#---------- Simulation parameters
+# --------------------------------------------------------------------------------------------------
             totalArea = simDay.parameters['Site'].getArrayNum() * simDay.parameters['PVArray'].getArea()
             
             solarVoltage = simDay.parameters['PVArray'].getVoltage() 
@@ -235,6 +269,11 @@ class thread_SimulateDay(threading.Thread):
             sunnyTimeSteps = 0
             powerRunVal = 0
 
+# --------------------------------------------------------------------------------------------------
+#---------- Tilted irradiance calculation
+# --------------------------------------------------------------------------------------------------
+
+            #TODO: Fix this shit from making the power go negative
             # Declination angle of the sun
             argRadians = math.radians((360 * (284 + currentDayOfYear)) / 365.0)
             delta = 23.45 * math.sin(argRadians)
@@ -244,12 +283,19 @@ class thread_SimulateDay(threading.Thread):
             argRadians_1 = math.radians(a + panelAngle)
             argRadians_2 = math.radians(a)
 
+            # Factor to multiple the irradiance with to consider the panel angle
+            tiltedFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
+
             # Calculate the amount of sunlight hours in the day
             # http://mathforum.org/library/drmath/view/56478.html
             P = math.asin(0.39795 * math.cos(0.2163108 + 2 * math.atan(0.9671396 * math.tan(0.00860 * (currentDayOfYear-186)))))
             numerator = math.sin(0.8333 * math.pi/180) + math.sin(lat * math.pi/180) * math.sin(P)
             denominator =  math.cos(lat * math.pi /180) * math.cos(P) 
             sunlightHours = 24 - (24/math.pi) * math.acos( numerator / denominator )
+
+# --------------------------------------------------------------------------------------------------
+#---------- SOLAR MODEL
+# --------------------------------------------------------------------------------------------------
 
             # Simulate the irradiance over a day in half hour increments
             for i in range(STEPS_PER_DAY):
@@ -258,14 +304,13 @@ class thread_SimulateDay(threading.Thread):
                 minutesIntoDay = i * SIMULATION_TIMESTEP_MINS
                 d = datetime.datetime(year, month, day) + datetime.timedelta(minutes=minutesIntoDay)
 
-                # Get the sun altitude and irrandiance for the day using Pysolar
+                # Get the sun altitude and irradiance for the day using Pysolar
                 altitude = Pysolar.GetAltitude(lat, lng, d)
                 irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
 
                 if irradiance > 0:
-                    # Calculate the amount of irrandiance on the panel
-                    panelIrradiance = (irradiance * math.sin(argRadians_1) / math.sin(argRadians_2))
-
+                    # Calculate the amount of irradiance on the panel
+                    panelIrradiance = irradiance * tiltedFactor
                     # Calculates the solar power in W for a whole day
                     solarOutput = panelIrradiance * totalArea * panelEff * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
             
@@ -302,9 +347,9 @@ class thread_SimulateDay(threading.Thread):
                     energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
                     powerRunVal += AC2Output
 
-                # else:
-                #     AC2Output = 0
-                # f.write(str(AC2Output) + ',' + str(sunnyTime) + '\n')
+# --------------------------------------------------------------------------------------------------
+#---------- RESULTS
+# --------------------------------------------------------------------------------------------------
 
             # Average the effciencies over the day
             sunnyTime = sunlightHours * float(60 / SIMULATION_TIMESTEP_MINS)
@@ -317,7 +362,7 @@ class thread_SimulateDay(threading.Thread):
             simDay.electricalEffciency = elecEff
             simDay.totalEffciency = totalEffciency
             simDay.electricalEnergy = energyOutput
-            simDay.sunnyTime = sunlightHours
+            simDay.sunnyTime = a
 
             # TODO: Calculate peak currents for the day and output from the thread.
             simDay.peakCurrent_DC = DCcurrent

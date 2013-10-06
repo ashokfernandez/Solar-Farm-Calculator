@@ -30,12 +30,11 @@ siteToGXP = calcLength(siteLat, siteLong, gridLat, gridLong)
 
 
 
-
 panel = PVPanel(voltage=30.5, efficiency=15, degradationRate=0.4, area=1.63, cost=50,
 	currency='NZD')
 
 module = PVModule(panelType=panel, panelNum=30)
-array = PVArray(moduleType=module, moduleNum=7, arrayAngle=45)
+array = PVArray(moduleType=module, moduleNum=7, arrayAngle=30)
 
 MATERIAL_CU = Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
 MATERIAL_AL = Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
@@ -62,7 +61,7 @@ financial = Financial(maintenance=30000, miscExpenses=(500000+500000), interestR
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-                       numThreads=50, simulationTimestepMins=30)
+                       numThreads=50, simulationTimestepMins=60)
 
 
 results = simulation.run()
@@ -85,11 +84,9 @@ def FinancialFormatter(x, pos):
 
     return format
 
-def movingaverage(interval, window_size):
-    window = numpy.ones(int(window_size))/float(window_size)
-    return numpy.convolve(interval, window, 'same')
-
 formatter = FuncFormatter(FinancialFormatter)
+
+# Output day simulation data to csv
 
 # f = open('averagePower.csv', 'w')
 # for day in powerResults['averagePower']:
