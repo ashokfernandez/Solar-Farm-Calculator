@@ -189,20 +189,18 @@ class thread_SimulateDay(threading.Thread):
 
             # Time steps
             SIMULATION_TIMESTEP_MINS = self.timestep_mins
-            MINS_PER_DAY = 1440.00 #             Make it a float so it divides nicely
+            MINS_PER_DAY = 1440.00 # Make it a float so it divides nicely
             STEPS_PER_DAY = int(MINS_PER_DAY / SIMULATION_TIMESTEP_MINS)
 
             # Simulation parameters
-            solarVoltage = simDay.parameters['PVArray'].getVoltage() 
             totalArea = simDay.parameters['Site'].getArrayNum() * simDay.parameters['PVArray'].getArea()
             
+            solarVoltage = simDay.parameters['PVArray'].getVoltage() 
             panelEff = simDay.parameters['PVPanel'].getEfficiency()
             panelDegRate = simDay.parameters['PVPanel'].getDegradationRate()
-
+            panelAngle = simDay.parameters['PVArray'].getAngle() 
+            
             DCcable = simDay.parameters['DCCable']
-            # DCcableMaterial = simDay.parameters['DCCable'].getMaterial()
-            # DCdiameter = simDay.parameters['DCCable'].getDiameter() 
-            # DCcableLength = simDay.parameters['DCCable'].getLength()
             
             InvEff = simDay.parameters['Inverter'].getEfficiency()
             InvPowerFactor = simDay.parameters['Inverter'].getPowerFactor()
@@ -213,12 +211,9 @@ class thread_SimulateDay(threading.Thread):
 
             AC1Cable = simDay.parameters['AC1Cable']
             AC1StrandNum = simDay.parameters['AC1Cable'].getStrandNum()
-            # AC1Diameter = simDay.parameters['AC1Cable'].getDiameter()
-            # AC1Length = simDay.parameters['AC1Cable'].getLength()
             
             AC2Cable = simDay.parameters['AC2Cable']
-            # AC2StrandDiameter = simDay.parameters['AC2Cable'].getDiameter()
-            # AC2Length = simDay.parameters['AC2Cable'].getLength()
+
             AC2StrandNum = simDay.parameters['AC2Cable'].getStrandNum()
             
             lat = simDay.parameters['Site'].getLatitude()
@@ -229,13 +224,32 @@ class thread_SimulateDay(threading.Thread):
 
             # Number of days into the simulation this day occurs
             currentSimDay = (simDay.date - simDay.parameters['start']).days + 1
+            currentDayOfYear = (simDay.date - datetime.date(year, 1, 1)).days + 1
+
+            # f = open("day" + str(currentSimDay) + '.csv', 'w')
 
             # Running totals for the total output energy effciencies at each timestep
             energyOutput = 0
             totalEffciency = 0
             elecEff = 0
-            sunnyTime = 0
+            sunnyTimeSteps = 0
             powerRunVal = 0
+
+            # Declination angle of the sun
+            argRadians = math.radians((360 * (284 + currentDayOfYear)) / 365.0)
+            delta = 23.45 * math.sin(argRadians)
+            a = 90 - lat + delta
+                
+            # Calculates the irradiance on the panel for a day
+            argRadians_1 = math.radians(a + panelAngle)
+            argRadians_2 = math.radians(a)
+
+            # Calculate the amount of sunlight hours in the day
+            # http://mathforum.org/library/drmath/view/56478.html
+            P = math.asin(0.39795 * math.cos(0.2163108 + 2 * math.atan(0.9671396 * math.tan(0.00860 * (currentDayOfYear-186)))))
+            numerator = math.sin(0.8333 * math.pi/180) + math.sin(lat * math.pi/180) * math.sin(P)
+            denominator =  math.cos(lat * math.pi /180) * math.cos(P) 
+            sunlightHours = 24 - (24/math.pi) * math.acos( numerator / denominator )
 
             # Simulate the irradiance over a day in half hour increments
             for i in range(STEPS_PER_DAY):
@@ -246,17 +260,19 @@ class thread_SimulateDay(threading.Thread):
 
                 # Get the sun altitude and irrandiance for the day using Pysolar
                 altitude = Pysolar.GetAltitude(lat, lng, d)
-                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
+                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
 
                 if irradiance > 0:
+                    # Calculate the amount of irrandiance on the panel
+                    panelIrradiance = irradiance #(irradiance * math.sin(argRadians_1) / math.sin(argRadians_2))
 
                     # Calculates the solar power in W for a whole day
-                    solarOutput = irradiance * totalArea * panelEff  #* (1 - panelDegRate / float(100*365)) * (currentSimDay)
+                    solarOutput = panelIrradiance * totalArea * panelEff * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
             
                     # DC cable calcs
                     DCresistance = calcCableResistance(DCcable, temperature)
                     DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage         # ----------------- DC_CURRENT
-                    DCloss = 2 * DCcurrent**2 * DCresistance
+                    DCloss = 2 * DCcurrent** 2 * DCresistance
                     DCoutput = solarOutput - DCloss
                 
                     # Inverter calcs
@@ -280,17 +296,19 @@ class thread_SimulateDay(threading.Thread):
                     AC2Output = TxOut - AC2loss
           
                     # Final outputs
-                
-                    sunnyTime += 1
-                    totalEffciency += (AC2Output / (irradiance * totalArea)) * 100
+                    sunnyTimeSteps += 1
+                    totalEffciency += (AC2Output / (panelIrradiance * totalArea)) * 100
                     elecEff += (AC2Output / solarOutput) * 100
                     energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
                     powerRunVal += AC2Output
 
+                # else:
+                #     AC2Output = 0
+                # f.write(str(AC2Output) + ',' + str(sunnyTime) + '\n')
 
             # Average the effciencies over the day
-            sunnyTime = float(sunnyTime)
-            totalEffciency /= sunnyTime
+            sunnyTime = sunlightHours * float(60 / SIMULATION_TIMESTEP_MINS)
+            totalEffciency /= sunnyTimeSteps
             elecEff /= sunnyTime
             powerRunVal /= sunnyTime
             
@@ -299,6 +317,7 @@ class thread_SimulateDay(threading.Thread):
             simDay.electricalEffciency = elecEff
             simDay.totalEffciency = totalEffciency
             simDay.electricalEnergy = energyOutput
+            simDay.sunnyTime = sunlightHours
 
             # TODO: Calculate peak currents for the day and output from the thread.
             simDay.peakCurrent_DC = DCcurrent
@@ -326,6 +345,7 @@ class SimulationDay(object):
         self.electricalEnergy = 0
         self.electricalEffciency = 0
         self.totalEffciency = 0
+        self.sunnyTime = 0
 
     def setElectricalEnergy(self, electricalEnergy):
         ''' Sets the electrical energy from the simulation '''
@@ -548,6 +568,7 @@ class Simulation(object):
         totalEffciency = []
         electricalEffciency = []
         averagePower = []
+        sunnyTime = []
 
         for day in resultDays:
             days.append(day.date)
@@ -555,6 +576,7 @@ class Simulation(object):
             electricalEffciency.append(day.electricalEffciency)
             totalEffciency.append(day.totalEffciency)
             averagePower.append(day.averagePower / 1000) # Converts power to kW
+            sunnyTime.append(day.sunnyTime)
 
         print "Split data"
 
@@ -563,7 +585,8 @@ class Simulation(object):
             'electricalEnergy' : electricalEnergy,
             'electricalEffciency' : electricalEffciency,
             'totalEffciency' : totalEffciency,
-            'averagePower' : averagePower
+            'averagePower' : averagePower,
+            'sunnyTime' : sunnyTime
         }
 
 
