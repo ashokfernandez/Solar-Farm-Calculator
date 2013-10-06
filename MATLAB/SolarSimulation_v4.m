@@ -300,7 +300,7 @@ for I = 1:simLength
 end
 
 % income = sum(energyOutput)*buyBackRate;
-plot(solarOutput)
+plot(panelIrr, 'b')
 hold on;
-plot(DCoutput)
+plot(irradiance, 'g')
 hold off;

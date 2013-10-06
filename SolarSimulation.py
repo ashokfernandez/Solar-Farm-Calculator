@@ -264,7 +264,7 @@ class thread_SimulateDay(threading.Thread):
 
                 if irradiance > 0:
                     # Calculate the amount of irrandiance on the panel
-                    panelIrradiance = irradiance #(irradiance * math.sin(argRadians_1) / math.sin(argRadians_2))
+                    panelIrradiance = (irradiance * math.sin(argRadians_1) / math.sin(argRadians_2))
 
                     # Calculates the solar power in W for a whole day
                     solarOutput = panelIrradiance * totalArea * panelEff * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
