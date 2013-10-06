@@ -22,6 +22,15 @@ def internet_on():
     
     return connectionAvaliable
 
+def get_currency_list():
+	''' Returns a list of the avaliable currencies, as defined in currencyList.txt'''
+	with open('currencyList.txt', 'r') as f:
+		# Read the currencies into an array, the go through the array and remove the newlines
+		currencies = f.readlines()
+		currencies = [x.strip() for x in currencies]
+		return currencies
+
+
 # ------------------------------------------------------------------------------------------------------
 # DIALOG BOXES
 # ------------------------------------------------------------------------------------------------------
@@ -50,6 +59,19 @@ class DialogBox_IncompleteForm(SolarFarmGUI.IncompleteForm):
 		''' Closes the window when the OK button is pressed'''
 		self.EndModal(1)
 
+# Implement the functionality of the 'Fatal Error' message dialog
+class DialogBox_FatalError(SolarFarmGUI.FatalError):
+	def __init__( self , errorMessage):
+		''' Creates the "Fatal Error" dialog box and uses the given string as the error message.
+		the program will quit when the dialog is dismissed'''
+		SolarFarmGUI.FatalError.__init__(self, None)
+		self.fatalErrorLabel.AppendText(errorMessage)
+		self.ShowModal()
+
+	def evt_dialogCloseProgram_clicked( self, event ):
+		''' Terminates the program after the user has been notified of a fatal error'''
+		self.EndModal(1)
+		sys.exit()
 
 # ------------------------------------------------------------------------------------------------------
 # MAIN APPLICATION FRAME
@@ -65,6 +87,14 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		#initialize parent class
 		SolarFarmGUI.ApplicationFrame.__init__(self,parent)
 
+		# Attempt to load the list of currencies
+		try:
+			currencies = get_currency_list()
+		except:
+			DialogBox_FatalError("Unable to load the list of currencies from currencyList.txt")
+
+		print currencies
+
 	def evt_closeApp_clicked( self, event ):
 		''' Terminates the program when the red cross is clicked on the main window'''
 		# DO ANY CLEAN UP HERE
@@ -73,13 +103,14 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 	def evt_runSimulation_clicked( self, event ):
 		
 		# Check the internet is on, if not then display the No internet dialog
-		if not internet_on():
-			DialogBox_NoInternet()
-			return None
+		# if not internet_on():
+			# DialogBox_NoInternet()
+			# return None
 		
 		# Otherwise try to validate the users data and if there is a problem, display
 		# the invalid data dialog
-		DialogBox_IncompleteForm()
+		# DialogBox_IncompleteForm()
+		DialogBox_FatalError(" Foo Bar Hoo Haa a fatal error has occured. Thats not nice. Goodbye!")
 		
 
 
