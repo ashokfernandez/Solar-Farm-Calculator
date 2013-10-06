@@ -103,14 +103,14 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 	def evt_runSimulation_clicked( self, event ):
 		
 		# Check the internet is on, if not then display the No internet dialog
-		# if not internet_on():
-			# DialogBox_NoInternet()
-			# return None
+		if not internet_on():
+			DialogBox_NoInternet()
+			return None
 		
 		# Otherwise try to validate the users data and if there is a problem, display
 		# the invalid data dialog
-		# DialogBox_IncompleteForm()
-		DialogBox_FatalError(" Foo Bar Hoo Haa a fatal error has occured. Thats not nice. Goodbye!")
+		# if not validate_fields():
+			# DialogBox_IncompleteForm()
 		
 
 
