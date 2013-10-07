@@ -46,78 +46,78 @@ def calcLength(lat1, lng1, lat2, lng2):
 
     return length
 
-def getDailyEnergy(angle, date, latitude, longitude):
-    '''Returns the total energy of of a day'''
+# def getDailyEnergy(angle, date, latitude, longitude):
+#     '''Returns the total energy of of a day'''
 
-    timeStepMins = 30.0 # time step in minutes
-    minsPerDay = 1440.00  # Minutes in a day (float for dividing)
+#     timeStepMins = 30.0 # time step in minutes
+#     minsPerDay = 1440.00  # Minutes in a day (float for dividing)
 
-    timeStep = minsPerDay / float(timeStepMins)
+#     timeStep = minsPerDay / float(timeStepMins)
 
-    # Num days into the year
-    yearDay = (datetime.datetime(2013, 1, 1) - date).days + 1
+#     # Num days into the year
+#     yearDay = (datetime.datetime(2013, 1, 1) - date).days + 1
 
-     # arbitary angle that is used for calculating the irradiance
-    argRadians = math.radians(360 / 365 * (284 + yearDay))
-    # same as above for the next 3 lines
-    a = 90 - latitude + 23.45 * math.sin(argRadians)
-    argRadians_1 = math.radians(a + angle)
-    argRadians_2 = math.radians(a)
+#      # arbitary angle that is used for calculating the irradiance
+#     argRadians = math.radians(360 / 365 * (284 + yearDay))
+#     # same as above for the next 3 lines
+#     a = 90 - latitude + 23.45 * math.sin(argRadians)
+#     argRadians_1 = math.radians(a + angle)
+#     argRadians_2 = math.radians(a)
 
-    # Irrdiance scale factor
-    scaleFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
+#     # Irrdiance scale factor
+#     scaleFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
 
-    # Variable store the total energy in the year
-    dayEnergy = 0
+#     # Variable store the total energy in the year
+#     dayEnergy = 0
 
-    for i in range(int(timeStep)):
+#     for i in range(int(timeStep)):
 
-        minutesIntoDay = i * timeStepMins
-        d = date + datetime.timedelta(minutes=minutesIntoDay)
+#         minutesIntoDay = i * timeStepMins
+#         d = date + datetime.timedelta(minutes=minutesIntoDay)
 
-        altitude = Pysolar.GetAltitude(latitude, longitude, d)
-        irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
+#         altitude = Pysolar.GetAltitude(latitude, longitude, d)
+#         irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
 
-        dayEnergy += irradiance * scaleFactor * (timeStepMins / 60)
+#         dayEnergy += irradiance * scaleFactor * (timeStepMins / 60)
 
-    return dayEnergy
+#     return dayEnergy
 
 
-def calcOptimumAngle(siteLat, siteLon):
-    ''' Calculates the optimum angle of the PV panels based on the latitude of the site. '''
+# def calcOptimumAngle(siteLat, siteLon):
+#     ''' Calculates the optimum angle of the PV panels based on the latitude of the site. '''
 
-    # [0:0.1:90] specifices angle between 0 and 90 degrees
-    testAngle = [x * 0.1 for x in range(0, 900)]
+#     # [0:0.1:90] specifices angle between 0 and 90 degrees
+#     testAngle = [x * 0.1 for x in range(0, 900)]
 
-    angleLength = len(testAngle) # length of test angle array
-    # arbitary start day (just need to simulate a year)
+#     angleLength = len(testAngle) # length of test angle array
+#     # arbitary start day (just need to simulate a year)
 
-    start = datetime.datetime(2013, 1, 1)
+#     start = datetime.datetime(2013, 1, 1)
 
-    days = [start + datetime.timedelta(days=x) for x in range(0,365)]
+#     days = [start + datetime.timedelta(days=x) for x in range(0,365)]
     
     
-    yearlyEnergy = []
+#     yearlyEnergy = []
 
-    # iterates through each angle and calculates the mean irradiance for that year
-    for i in range(angleLength):
+#     # iterates through each angle and calculates the mean irradiance for that year
+#     for i in range(angleLength):
         
 
-        yearEnergy = 0
+#         yearEnergy = 0
 
-        for j in range(365):
+#         for j in range(365):
 
-            yearEnergy += getDailyEnergy(testAngle[i], days[i], siteLat, siteLon)
+#             yearEnergy += getDailyEnergy(testAngle[i], days[i], siteLat, siteLon)
         
-        yearlyEnergy.append(yearlyEnergy)
+#         yearlyEnergy.append(yearlyEnergy)
     
-    # Takes the angle with the highest average yearly energy
-    ind = yearlyEnergy.index(max(yearlyEnergy))
+#     # Takes the angle with the highest average yearly energy
+#     ind = yearlyEnergy.index(max(yearlyEnergy))
 
-    #the optimum angle for solar panel
-    opAngle = testAngle[ind]
+#     #the optimum angle for solar panel
+#     opAngle = testAngle[ind]
 
-    return opAngle
+#     return opAngle
 
 def calcCableResistance(cable, temperature):
     ''' Calculates the resistance of a cable given the cable material, ambient temperature,
@@ -221,7 +221,7 @@ class thread_SimulateDay(threading.Thread):
             day = simDay.date.day
 
             # Time steps
-            SIMULATION_TIMESTEP_MINS = self.timestep_mins
+            SIMULATION_TIMESTEP_MINS = float(self.timestep_mins)
             MINS_PER_DAY = 1440.00 # Make it a float so it divides nicely
             STEPS_PER_DAY = int(MINS_PER_DAY / SIMULATION_TIMESTEP_MINS)
 # --------------------------------------------------------------------------------------------------
@@ -275,16 +275,22 @@ class thread_SimulateDay(threading.Thread):
 
             #TODO: Fix this shit from making the power go negative
             # Declination angle of the sun
-            argRadians = math.radians((360 * (284 + currentDayOfYear)) / 365.0)
+            argRadians = math.radians((360 * (284 + currentDayOfYear)/ 365.0))
             delta = 23.45 * math.sin(argRadians)
             a = 90 - lat + delta
                 
             # Calculates the irradiance on the panel for a day
-            argRadians_1 = math.radians(a + panelAngle)
+            # argRadians_1 = math.radians(a + panelAngle)
             argRadians_2 = math.radians(a)
+            panelAngle_rad = math.radians(panelAngle)
+
+            if lat > 0:
+                panelAzimuth = math.radians(180)
+            elif lat <= 0:
+                panelAzimuth = math.radians(0)
 
             # Factor to multiple the irradiance with to consider the panel angle
-            tiltedFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
+            # tiltedFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
 
             # Calculate the amount of sunlight hours in the day
             # http://mathforum.org/library/drmath/view/56478.html
@@ -305,8 +311,12 @@ class thread_SimulateDay(threading.Thread):
                 d = datetime.datetime(year, month, day) + datetime.timedelta(minutes=minutesIntoDay)
 
                 # Get the sun altitude and irradiance for the day using Pysolar
+                azimuth_deg = Pysolar.GetAzimuth(lat, lng, d)
+                azimuth_rad = math.radians(azimuth_deg)
                 altitude = Pysolar.GetAltitude(lat, lng, d)
-                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude) 
+                irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
+
+                tiltedFactor = math.cos(argRadians_2) * math.sin(panelAngle_rad) * math.cos(panelAzimuth - azimuth_rad) + math.sin(argRadians_2) * math.cos(panelAngle_rad)
 
                 if irradiance > 0:
                     # Calculate the amount of irradiance on the panel
@@ -512,7 +522,8 @@ class Simulation(object):
         expensesAccumulator = CURRENCY_EXCHANGE.withdraw(0, 'USD')
 
         # Get the initial value of the loan
-        initialExpenses = self.parameters['Financial'].getCurrentLoanValue()
+        # initialExpenses = self.parameters['Financial'].getCurrentLoanValue()
+
 
         # Simulate the financial life of the project
         for i in range(self.numDays):
@@ -525,6 +536,9 @@ class Simulation(object):
             dailyCapitalWorth += 3 * self.parameters['AC1Cable'].getDepreciatedValue(i)  # Worth of AC1 cables
             dailyCapitalWorth += self.parameters['Transformer'].getDepreciatedValue(i) * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
             dailyCapitalWorth += 3 * self.parameters['AC2Cable'].getDepreciatedValue(i)  # Worth of the GEP transmission line
+
+            if i == 0:
+                self.parameters['Financial'].addToLoan(dailyCapitalWorth)
             
             # Save the current net asset value
             netAssetValue.append(dailyCapitalWorth)
@@ -546,6 +560,8 @@ class Simulation(object):
 
             # Save the current loan value
             loanValue.append(self.parameters['Financial'].getCurrentLoanValue())
+
+
 
         # Convert all the results to float arrays in the base currency
         netAssetValue = [self.parameters['Financial'].amountInBaseCurrency(x) for x in netAssetValue]
