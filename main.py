@@ -109,7 +109,7 @@ class InputField(object):
 		''' Returns the value of the wxTextCtl field'''
 		return self.field.GetValue()
 
-	def __setLabelColour(self, colour):
+	def setLabelColour(self, colour):
 		''' Sets the colour of the wxStaticText label, colour is a 3 or 4 length tuple
 		of RGB or RGBA values between 0-255'''
 		self.label.SetForegroundColour(colour)
@@ -155,15 +155,42 @@ class InputField(object):
 			
 			# Otherwise the value is all good, set the fields to their appropriate colours
 			# and mark valid as true
-			self.__setLabelColour(BLACK) 
+			self.setLabelColour(BLACK) 
 			result = userInput
 
 		except:
 			# Something wasn't right about the number, mark the field as red and return 
-			self.__setLabelColour(RED) 
+			self.setLabelColour(RED) 
 			result = False
 
 		return result
+
+# Special case when an input field is automatically calculated from other data
+class OptionalInputField(InputField):
+	def __init__(self, field, label, checkbox, condition='', upperLimit=False, lowerLimit=False):
+		''' Initialises the input field superclass and saves the checkbox '''
+		# Initialise superclass stuff	
+		InputField.__init__(self, field, label, condition, upperLimit, lowerLimit)
+
+		# Save a reference to the checkbox
+		self.checkbox = checkbox
+
+	def getCheckboxState(self):
+		''' Returns the state of the checkbox so the simulation can be told wether or not the value is valid
+		    or needs to be calculated. True if the checkbox is checked, otherwise False.'''
+		return self.checkbox.IsChecked()
+
+	def validateField(self):
+		'''If the field is to be calculated from other field values return a placeholder value, otherwise
+		   validate like normal. The placeholder value is required as the fields that depend on this one
+		   need to be validated first'''
+		# If the checkbox is ticked ensure the field label is black and return the placeholder 
+		if self.checkbox.IsChecked():
+			self.setLabelColour(InputField.BLACK)
+			return None
+		# Otherwise validate as usual
+		else:
+			return InputField.validateField(self)
 
 # ------------------------------------------------------------------------------------------------------
 # MAIN APPLICATION FRAME
@@ -200,6 +227,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# ----- Save a reference to all the input fields and their labels
 		self.inputFields = {}
+		self.optionalInputFields = {}
 		
 		# SITE VARIABLES
 		self.inputFields['siteCost'] = InputField(self.siteCost_input, self.siteCost_label, 'p')
@@ -223,7 +251,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# PANEL VARIABLES
 		self.inputFields['panelVoltage'] = InputField(self.panelVoltage_input, self.panelVoltage_label, 'p')
-		self.inputFields['panelAngle'] = InputField(self.panelAngle_input, self.panelAngle_label, 'p')
+		self.optionalInputFields['panelAngle'] = OptionalInputField(self.panelAngle_input, self.panelAngle_label, self.panelCalculateAngle_checkBox, 'p')
 		self.inputFields['panelEffciency'] = InputField(self.panelEffciency_input, self.panelEffciency_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['panelDegradation'] = InputField(self.panelDegradation_input, self.panelDegradation_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['panelArea'] = InputField(self.panelArea_input, self.panelArea_label, 'p')
@@ -260,7 +288,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# TX CABLE VARIABLES
 		self.inputFields['TXCableDiameter'] = InputField(self.TXCableDiameter_input, self.TXCableDiameter_label, 'p')
 		self.inputFields['TXCableNumStrands'] = InputField(self.TXCableNumStrands_input, self.TXCableNumStrands_label, 'pi')
-		self.inputFields['TXCableLength'] = InputField(self.TXCableLength_input, self.TXCableLength_label, 'p')
+		self.optionalInputFields['TXCableLength'] = OptionalInputField(self.TXCableLength_input, self.TXCableLength_label, self.TXCableCalculateLength_checkBox, 'p')
 		self.inputFields['TXCableCost'] = InputField(self.TXCableCost_input, self.TXCableCost_label, 'p')
 		self.inputFields['TXCableDepreciation'] = InputField(self.TXCableDepreciation_input, self.TXCableDepreciation_label, lowerLimit=0, upperLimit=100)
 
@@ -296,18 +324,39 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		sys.exit()
 
 	def evt_runSimulation_clicked( self, event ):
-		
+		''' Event that is run when the "Run Simulation" button is clicked. This will validate all the inputs, check for
+		an internet connection and run the simulation if all the inputs are correct. Otherwise an error dialog is shown
+		telling the user what they did wrong'''
 		# Check the internet is on, if not then display the No internet dialog
 		# if not internet_on():
 			# DialogBox_NoInternet()
 			# return None
 		
-		for field in self.inputFields.values():
-			field.validateField()
+		# Save the validated input data to a dictionary
+		inputData = {}
+
+		# Validate the required input fields
+		for key in self.inputFields.keys():
+			inputData[key] = self.inputFields[key].validateField()
+
+		# Check the optional input fields
+		optionalData = {}
+		for key in self.optionalInputFields.keys():
+			optionalData[key] = self.optionalInputFields[key].validateField()	
+
+		inputsValid = (False not in inputData.values()) or (False not in optionalData.values())
+
+		if not inputsValid:
+			DialogBox_IncompleteForm()
+
+		print inputData
+		print optionalData
+
+
 		# Otherwise try to validate the users data and if there is a problem, display
 		# the invalid data dialog
 		# if not validate_fields():
-		# DialogBox_IncompleteForm()
+		
 
 	def evt_calculateOptimumAngle_checked( self, event ):
 		''' Enables and disables the panel angle box when the "Calculate Optimum Angle" checkbox is toggled '''
