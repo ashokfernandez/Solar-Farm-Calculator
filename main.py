@@ -166,7 +166,7 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 
 	# Instantiate the panel object
 	panel = SolarAssets.PVPanel(voltage=inputParameters['panelVoltage'], 
-		 			efficiency=inputParameters['panelAngle'], 
+		 			rating=inputParameters['panelRating'], 
 		 			degradationRate=inputParameters['panelDegradation'], 
 		 			area=inputParameters['panelArea'], 
 		 			cost=inputParameters['panelCost'], 
@@ -519,7 +519,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# PANEL VARIABLES
 		self.inputFields['panelVoltage'] = InputField(self.panelVoltage_input, self.panelVoltage_label, 'p')
 		self.inputFields['panelAngle'] = InputField(self.panelAngle_input, self.panelAngle_label, 'p')
-		self.inputFields['panelEffciency'] = InputField(self.panelEffciency_input, self.panelEffciency_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['panelRating'] = InputField(self.panelRating_input, self.panelRating_label, 'p')
 		self.inputFields['panelDegradation'] = InputField(self.panelDegradation_input, self.panelDegradation_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['panelArea'] = InputField(self.panelArea_input, self.panelArea_label, 'p')
 		self.inputFields['panelCost'] = InputField(self.panelCost_input, self.panelCost_label, 'p')
@@ -613,7 +613,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# PANEL VARIABLES
 		self.inputFields['panelVoltage'].setFieldValue('30.5')
 		self.inputFields['panelAngle'].setFieldValue('45')
-		self.inputFields['panelEffciency'].setFieldValue('15')
+		self.inputFields['panelRating'].setFieldValue('230')
 		self.inputFields['panelDegradation'].setFieldValue('0.4')
 		self.inputFields['panelArea'].setFieldValue('1.63')
 		self.inputFields['panelCost'].setFieldValue('50')
@@ -743,7 +743,6 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 			# Keep checking the power progress and update the dialog box
 			while powerProgress < 95:
-				print powerProgress
 				wx.MilliSleep(150)
 				progressDialog.update(powerProgress)
 				powerProgress = simulation.getPowerProgress()

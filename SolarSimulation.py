@@ -187,10 +187,9 @@ class thread_SimulateDay(threading.Thread):
             panelNum = simDay.parameters['PVModule'].getPanelNum() * simDay.parameters['PVArray'].getModuleNum() * simDay.parameters['Site'].getArrayNum()
             
             solarVoltage = simDay.parameters['PVArray'].getVoltage() 
-            panelEff = simDay.parameters['PVPanel'].getEfficiency()
             panelDegRate = simDay.parameters['PVPanel'].getDegradationRate()
             panelAngle = simDay.parameters['PVArray'].getAngle()
-            # panelRating = simDay.parameters['PVPanel'].getPanelRating() 
+            panelRating = simDay.parameters['PVPanel'].getRating() 
             
             DCcable = simDay.parameters['DCCable']
             
@@ -271,8 +270,6 @@ class thread_SimulateDay(threading.Thread):
                 irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
 
                 tiltedFactor = math.cos(argRadians_2) * math.sin(panelAngle_rad) * math.cos(panelAzimuth - azimuth_rad) + math.sin(argRadians_2) * math.cos(panelAngle_rad)
-                #TODO: Change panelRating to access the PVPanel class.
-                panelRating = 230 
 
                 if irradiance > 0:
                     # Calculate the amount of irradiance on the panel

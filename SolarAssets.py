@@ -49,15 +49,13 @@ class Asset(object):
 # --------------------------------------------------------------------------------------------------
 class PVPanel(Asset):
     ''' Class to store information relating to a solar PV panel. '''
-    # TODO: Add panel rating as a function input parameter to init the class object.
-    def __init__(self, voltage, efficiency, degradationRate, area, cost, currency = 'USD',
+    def __init__(self, voltage, rating, degradationRate, area, cost, currency = 'USD',
             depRate = 0):
         ''' Initialise a PV panel object. '''
         self.voltage = voltage                  # Panel rated voltage (V)
-        self.efficiency = efficiency            # Panel rated efficiency (%)
         self.degradationRate = degradationRate  # Panel asset degradation rate (%)
         self.area = area                        # Panel surface area (m^2)
-        # self.rating = rating                    # Panel rating (W)
+        self.rating = rating                    # Panel rating (W)
 
         # Financial properties
         super(PVPanel, self).__init__(cost, currency, depRate)
