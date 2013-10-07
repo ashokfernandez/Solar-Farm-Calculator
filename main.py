@@ -265,7 +265,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.inputFields['DCCableDepreciation'] = InputField(self.DCCableDepreciation_input, self.DCCableDepreciation_label, lowerLimit=0, upperLimit=100)
 
 		# INVERTER VARIABLES
-		self.inputFields['inverterPowerFactor'] = InputField(self.inverterPowerFactor_input, self.inverterPowerFactor_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['inverterPowerFactor'] = InputField(self.inverterPowerFactor_input, self.inverterPowerFactor_label, lowerLimit=0, upperLimit=1)
 		self.inputFields['inverterEfficiency'] = InputField(self.inverterEfficiency_input, self.inverterEfficiency_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['inverterOutputVoltage'] = InputField(self.inverterOutputVoltage_input, self.inverterOutputVoltage_label, 'p')
 		self.inputFields['inverterCost'] = InputField(self.inverterCost_input, self.inverterCost_label, 'p')
