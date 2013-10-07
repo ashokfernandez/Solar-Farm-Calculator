@@ -2,6 +2,10 @@ import urllib2                    # For testing the internet connection
 import sys
 import wx
 import SolarFarmGUI
+from matplotlib.ticker import FuncFormatter
+import matplotlib.pyplot as plt
+# import SimulationController
+
 
 # ------------------------------------------------------------------------------------------------------
 # CONSTANTS
@@ -86,6 +90,40 @@ class DialogBox_FatalError(SolarFarmGUI.FatalError):
 		self.EndModal(1)
 		sys.exit()
 
+# Class to show a progress dialog when the simulation is running
+class DialogBox_ProgressDialog(object):
+	def __init__(self, parent, maxItems):
+		''' Dialog box to show while the simulation is in progress '''
+
+		# Add 10% to the max items to account for the financial simulation
+		maxItems *= 1.1
+		maxItems = round(maxItems)
+
+		# Create the progress dialog
+		self.progressBox = wx.ProgressDialog("Running Simulation",
+                               			"Simulating Power Generation",
+                               maximum = maxItems,
+                               parent=parent,
+                               style = wx.PD_CAN_ABORT
+                                | wx.PD_APP_MODAL
+                                | wx.PD_ELAPSED_TIME
+                                #| wx.PD_ESTIMATED_TIME
+                                | wx.PD_REMAINING_TIME)
+ 		
+	def update(self, itemsLeft):
+		''' Passes the dialog the updated amount of items left in the simulation queue '''
+		
+		# If we are 90% of the way through tell the user we are up to the financials
+		if itemsLeft > (self.maxItems * 0.9):
+			self.progressBox.Update(itemsLeft, "Simulating Financial Returns")
+		else:
+			self.progressBox.Update(itemsLeft)
+
+ 	def closeDialog(self):
+ 		''' Closes the dialog box'''
+		self.progressBox.Destroy()
+
+
 # ------------------------------------------------------------------------------------------------------
 # INPUT VALIDATION CLASS
 # ------------------------------------------------------------------------------------------------------
@@ -113,6 +151,10 @@ class InputField(object):
 		''' Sets the colour of the wxStaticText label, colour is a 3 or 4 length tuple
 		of RGB or RGBA values between 0-255'''
 		self.label.SetForegroundColour(colour)
+
+	def setFieldValue(self, value):
+		''' Allows an external program to set the value in the field for testing purposes '''
+		self.field.AppendText(value)
 
 	def validateField(self):
 		''' Validates the input in the wxTextCtl inputField to be purely numeric. Condition can be either a string 
@@ -251,7 +293,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# PANEL VARIABLES
 		self.inputFields['panelVoltage'] = InputField(self.panelVoltage_input, self.panelVoltage_label, 'p')
-		self.optionalInputFields['panelAngle'] = OptionalInputField(self.panelAngle_input, self.panelAngle_label, self.panelCalculateAngle_checkBox, 'p')
+		self.inputFields['panelAngle'] = InputField(self.panelAngle_input, self.panelAngle_label, 'p')
 		self.inputFields['panelEffciency'] = InputField(self.panelEffciency_input, self.panelEffciency_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['panelDegradation'] = InputField(self.panelDegradation_input, self.panelDegradation_label, lowerLimit=0, upperLimit=100)
 		self.inputFields['panelArea'] = InputField(self.panelArea_input, self.panelArea_label, 'p')
@@ -316,7 +358,80 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.selectors['DCCableMaterial'] = self.DCCableMaterial_input
 		self.selectors['ACCableMaterial'] = self.ACCableMaterial_input
 		self.selectors['TXCableMaterial'] = self.TXCableMaterial_input
-		
+
+		# USED FOR TESTING PURPOSES
+		self.__loadDemoSimulation()
+
+	
+	def __loadDemoSimulation(self):
+		''' Loads demo values into the simulation fields for testing purposes '''	
+		# SITE VARIABLES
+		self.inputFields['siteCost'].setFieldValue('10000000')
+		self.inputFields['siteAppreciation'].setFieldValue('1.03')
+		self.inputFields['siteLatitude'].setFieldValue('-43.521886')
+		self.inputFields['siteLongitude'].setFieldValue('172.583864')
+		self.inputFields['siteGridLatitude'].setFieldValue('-43.521543')
+		self.inputFields['siteGridLongitude'].setFieldValue('172.571075')
+		self.inputFields['siteNumPanels'].setFieldValue('30')
+		self.inputFields['siteNumModules'].setFieldValue('7')
+		self.inputFields['siteNumArrays'].setFieldValue('30')
+		self.inputFields['siteNumTransformers'].setFieldValue('3')
+		self.inputFields['siteNumInverters'].setFieldValue('10')
+		self.inputFields['siteNumCircuitBreakers'].setFieldValue('15')
+
+		# FINANCIAL VARIABLES
+		self.inputFields['financialInterestRate'].setFieldValue('6')
+		self.inputFields['financialMiscExpenses'].setFieldValue('100000')
+		self.inputFields['financialMaintenance'].setFieldValue('25000')
+		self.inputFields['financialPowerPrice'].setFieldValue('0.20')
+
+		# PANEL VARIABLES
+		self.inputFields['panelVoltage'].setFieldValue('30.5')
+		self.inputFields['panelAngle'].setFieldValue('45')
+		self.inputFields['panelEffciency'].setFieldValue('15')
+		self.inputFields['panelDegradation'].setFieldValue('0.4')
+		self.inputFields['panelArea'].setFieldValue('1.63')
+		self.inputFields['panelCost'].setFieldValue('50')
+		self.inputFields['panelDepreciation'].setFieldValue('6')
+
+		# DC CABLE VARIABLES
+		self.inputFields['DCCableDiameter'].setFieldValue('20')
+		self.inputFields['DCCableLength'].setFieldValue('100')
+		self.inputFields['DCCableCost'].setFieldValue('100')
+		self.inputFields['DCCableDepreciation'].setFieldValue('6')
+
+		# INVERTER VARIABLES
+		self.inputFields['inverterPowerFactor'].setFieldValue('0.95')
+		self.inputFields['inverterEfficiency'].setFieldValue('95')
+		self.inputFields['inverterOutputVoltage'].setFieldValue('400')
+		self.inputFields['inverterCost'].setFieldValue('1000')
+		self.inputFields['inverterDepreciation'].setFieldValue('6')
+
+		# AC CABLE VARIABLES
+		self.inputFields['ACCableDiameter'].setFieldValue('6')
+		self.inputFields['ACCableNumStrands'].setFieldValue('5')
+		self.inputFields['ACCableLength'].setFieldValue('100')
+		self.inputFields['ACCableCost'].setFieldValue('100')
+		self.inputFields['ACCableDepreciation'].setFieldValue('6')
+
+		# TRANSFORMER VARIABLES
+		self.inputFields['transformerOutputVoltage'].setFieldValue('11e3')
+		self.inputFields['transformerEfficiency'].setFieldValue('98')
+		self.inputFields['transformerRating'].setFieldValue('1')
+		self.inputFields['transformerCost'].setFieldValue('1000')
+		self.inputFields['transformerDepreciation'].setFieldValue('6')
+
+		# TX CABLE VARIABLES
+		self.inputFields['TXCableDiameter'].setFieldValue('2')
+		self.inputFields['TXCableNumStrands'].setFieldValue('5')
+		self.optionalInputFields['TXCableLength'].setFieldValue('1000')
+		self.inputFields['TXCableCost'].setFieldValue('100')
+		self.inputFields['TXCableDepreciation'].setFieldValue('6')
+
+		# CIRCUIT BREAKERS
+		self.inputFields['circuitBreakerCost'].setFieldValue('1000')
+		self.inputFields['circuitBreakerDepreciation'].setFieldValue('6')
+
 
 	def evt_closeApp_clicked( self, event ):
 		''' Terminates the program when the red cross is clicked on the main window'''
@@ -327,10 +442,13 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		''' Event that is run when the "Run Simulation" button is clicked. This will validate all the inputs, check for
 		an internet connection and run the simulation if all the inputs are correct. Otherwise an error dialog is shown
 		telling the user what they did wrong'''
+		
+
+
 		# Check the internet is on, if not then display the No internet dialog
-		# if not internet_on():
-			# DialogBox_NoInternet()
-			# return None
+		if not internet_on():
+			DialogBox_NoInternet()
+			return None
 		
 		# Save the validated input data to a dictionary
 		inputData = {}
@@ -344,29 +462,36 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		for key in self.optionalInputFields.keys():
 			optionalData[key] = self.optionalInputFields[key].validateField()	
 
+		# Check if the inputs are valid or not
 		inputsValid = (False not in inputData.values()) or (False not in optionalData.values())
 
+		# If the inputs aren't valid, abort the simulation with an error message
 		if not inputsValid:
 			DialogBox_IncompleteForm()
+			return None
 
-		print inputData
-		print optionalData
+		# Get the value of the selector boxes
+		for key in self.selectors.keys():
+			
+			# Get the index and value of the option currently selected
+			index = self.selectors[key].GetCurrentSelection()	
+			value = self.selectors[key].GetString(index)
 
+			# If the key is a currency, strip the name of the currency off so just the code remains
+			if 'Currency' in key:
+				valueBits = value.split(':')
+				value = valueBits[0]
+			
+			# Save the selection
+			inputData[key] = value
 
-		# Otherwise try to validate the users data and if there is a problem, display
-		# the invalid data dialog
-		# if not validate_fields():
+		DialogBox_ProgressDialog(self, 100)
+		# SimulationController.InitialiseSimulation(inputData, optionalData)
+
+		# print data['power'], data['financial']
+
 		
-
-	def evt_calculateOptimumAngle_checked( self, event ):
-		''' Enables and disables the panel angle box when the "Calculate Optimum Angle" checkbox is toggled '''
-		# Check if the checkbox is clicked or not to determine if the wxTextCtrl should be enabled
-		isEnabled = True
-		if event.IsChecked():
-			isEnabled = False
-
-		# Enable or disable the wxTextCtrl as appropriate
-		self.panelAngle_input.Enable(isEnabled)
+		
 
 	
 	def evt_calculateTXCableLength_checked( self, event ):

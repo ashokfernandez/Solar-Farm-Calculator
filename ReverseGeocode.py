@@ -4,6 +4,10 @@ import json                       # Allows the data to be decoded
 
 BASE_URL = "http://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&sensor=false"
 
+class CountryNotFound(Exception):
+	''' Raised when the geocode could not find a country'''
+	pass
+
 # --------------------------------------------------------------------------------------------------------------------
 # MISC FUNCTIONS
 # --------------------------------------------------------------------------------------------------------------------

@@ -259,8 +259,7 @@ class AC1Cable(Asset):
 # --------------------------------------------------------------------------------------------------
 class Transformer(Asset):
     ''' Class that stores the information relating to a transformer. '''
-    def __init__(self, voltage, efficiency, VARating, cost, currency = 'USD', depRate = 0,
-        scrapValue = 0):
+    def __init__(self, voltage, efficiency, VARating, cost, currency = 'USD', depRate = 0):
         ''' Initialise the transformer object '''
         self.voltage = voltage
         self.efficiency = efficiency
@@ -268,7 +267,6 @@ class Transformer(Asset):
 
         # Financial properties
         super(Transformer, self).__init__(cost, currency, depRate)
-        self.scrapValue = scrapValue
 
     def getVoltage(self):
         ''' Return the high voltage side of the transformer '''
