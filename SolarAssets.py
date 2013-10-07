@@ -49,6 +49,7 @@ class Asset(object):
 # --------------------------------------------------------------------------------------------------
 class PVPanel(Asset):
     ''' Class to store information relating to a solar PV panel. '''
+    # TODO: Add panel rating as a function input parameter to init the class object.
     def __init__(self, voltage, efficiency, degradationRate, area, cost, currency = 'USD',
             depRate = 0):
         ''' Initialise a PV panel object. '''
@@ -56,6 +57,7 @@ class PVPanel(Asset):
         self.efficiency = efficiency            # Panel rated efficiency (%)
         self.degradationRate = degradationRate  # Panel asset degradation rate (%)
         self.area = area                        # Panel surface area (m^2)
+        # self.rating = rating                    # Panel rating (W)
 
         # Financial properties
         super(PVPanel, self).__init__(cost, currency, depRate)
@@ -75,6 +77,10 @@ class PVPanel(Asset):
     def getArea(self):
         ''' Return the panel surface area. '''
         return self.area
+
+    def getRating(self):
+        ''' Return the rating of the panel in watts. '''
+        return self.rating
 
 # --------------------------------------------------------------------------------------------------
 # SOLAR MODULE
@@ -107,6 +113,10 @@ class PVModule(Asset):
     def getArea(self):
         '''Calculates the total area of the panels in m^2. '''
         return self.panelType.getArea() * self.panelNum
+
+    def getPanelNum(self):
+        ''' Return the number of panels within a module '''
+        return self.panelNum
 
 # --------------------------------------------------------------------------------------------------
 # SOLAR ARRAY

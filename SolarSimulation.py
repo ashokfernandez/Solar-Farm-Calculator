@@ -228,11 +228,13 @@ class thread_SimulateDay(threading.Thread):
 #---------- Simulation parameters
 # --------------------------------------------------------------------------------------------------
             totalArea = simDay.parameters['Site'].getArrayNum() * simDay.parameters['PVArray'].getArea()
+            panelNum = simDay.parameters['PVModule'].getPanelNum() * simDay.parameters['PVArray'].getModuleNum() * simDay.parameters['Site'].getArrayNum()
             
             solarVoltage = simDay.parameters['PVArray'].getVoltage() 
             panelEff = simDay.parameters['PVPanel'].getEfficiency()
             panelDegRate = simDay.parameters['PVPanel'].getDegradationRate()
-            panelAngle = simDay.parameters['PVArray'].getAngle() 
+            panelAngle = simDay.parameters['PVArray'].getAngle()
+            # panelRating = simDay.parameters['PVPanel'].getPanelRating() 
             
             DCcable = simDay.parameters['DCCable']
             
@@ -273,7 +275,6 @@ class thread_SimulateDay(threading.Thread):
 #---------- Tilted irradiance calculation
 # --------------------------------------------------------------------------------------------------
 
-            #TODO: Fix this shit from making the power go negative
             # Declination angle of the sun
             argRadians = math.radians((360 * (284 + currentDayOfYear)/ 365.0))
             delta = 23.45 * math.sin(argRadians)
@@ -288,9 +289,6 @@ class thread_SimulateDay(threading.Thread):
                 panelAzimuth = math.radians(180)
             elif lat <= 0:
                 panelAzimuth = math.radians(0)
-
-            # Factor to multiple the irradiance with to consider the panel angle
-            # tiltedFactor = math.sin(argRadians_1) / math.sin(argRadians_2)
 
             # Calculate the amount of sunlight hours in the day
             # http://mathforum.org/library/drmath/view/56478.html
@@ -317,12 +315,15 @@ class thread_SimulateDay(threading.Thread):
                 irradiance = Pysolar.radiation.GetRadiationDirect(d, altitude)
 
                 tiltedFactor = math.cos(argRadians_2) * math.sin(panelAngle_rad) * math.cos(panelAzimuth - azimuth_rad) + math.sin(argRadians_2) * math.cos(panelAngle_rad)
+                #TODO: Change panelRating to access the PVPanel class.
+                panelRating = 230 
 
                 if irradiance > 0:
                     # Calculate the amount of irradiance on the panel
                     panelIrradiance = irradiance * tiltedFactor
                     # Calculates the solar power in W for a whole day
-                    solarOutput = panelIrradiance * totalArea * panelEff * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
+                    # solarOutput = panelIrradiance * totalArea * panelEff * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
+                    solarOutput = panelIrradiance * panelRating * panelNum / 1000 * (1 - ((panelDegRate / 100.0) / 365.0) * currentSimDay)
             
                     # DC cable calcs
                     DCresistance = calcCableResistance(DCcable, temperature)

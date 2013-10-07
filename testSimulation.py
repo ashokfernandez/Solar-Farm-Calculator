@@ -7,14 +7,14 @@ import ReverseGeocode
 import Countries
 import AverageTemperatureData
 
-siteLat = -43.521886
-siteLong = 172.583864
+siteLat = -21.0928
+siteLong = -175.1050
 
-gridLat = -43.521543
-gridLong = 172.571075
+gridLat = -21.0910
+gridLong = -175.1102
 
 startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2023, 1, 1)
+endDate = datetime.date(2020, 1, 1)
 
 # Get the site information from the Reverse Geocode
 code = ReverseGeocode.get_country_code(siteLat, siteLong)
@@ -29,12 +29,12 @@ temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']
 siteToGXP = calcLength(siteLat, siteLong, gridLat, gridLong)
 
 
-
+#TODO: Add panel rating to PVPanel input
 panel = PVPanel(voltage=30.5, efficiency=15, degradationRate=0.4, area=1.63, cost=50,
 	currency='NZD')
 
 module = PVModule(panelType=panel, panelNum=30)
-array = PVArray(moduleType=module, moduleNum=7, arrayAngle=30)
+array = PVArray(moduleType=module, moduleNum=7, arrayAngle=21)
 
 MATERIAL_CU = Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
 MATERIAL_AL = Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
@@ -61,7 +61,7 @@ financial = Financial(maintenance=30000, miscExpenses=(500000+500000), interestR
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-                       numThreads=10, simulationTimestepMins=120)
+                       numThreads=10, simulationTimestepMins=30)
 
 
 results = simulation.run()
@@ -99,22 +99,24 @@ formatter = FuncFormatter(FinancialFormatter)
 # f.close()
 
 plt.figure(1)
-plt.subplot(311)
+# plt.subplot(311)
 plt.plot(powerResults['days'], powerResults['averagePower'])
 plt.title('Average Power of the PV farm')
 plt.ylabel('Power (kW)')
 
-plt.subplot(312)
+plt.figure(2)
+# plt.subplot(312)
 plt.plot(powerResults['days'], powerResults['electricalEnergy'], 'g')
 plt.title('Electrical energy of the PV farm at GEP')
 plt.ylabel('Energy (kWh)')
 
-plt.subplot(313)
+plt.figure(3)
+# plt.subplot(313)
 plt.plot(powerResults['days'], powerResults['totalEffciency'], 'r')
 plt.title('Total efficiency of the PV farm')
 plt.ylabel('Efficiency (%)')
 
-plt.figure(2)
+plt.figure(4)
 a = plt.subplot(311)
 a.yaxis.set_major_formatter(formatter)
 plt.plot(financialResults['days'], financialResults['netAssetValue'])
@@ -129,5 +131,10 @@ a = plt.subplot(313)
 a.yaxis.set_major_formatter(formatter)
 plt.plot(financialResults['days'], financialResults['accumulativeRevenue'], 'g')
 plt.title('Accumlative Revenue')
+
+plt.figure(5)
+plt.plot(financialResults['days'], powerResults['electricalEffciency'], 'g')
+plt.title('Electrical Effciency')
+plt.ylabel('Efficiency (%)')
 
 plt.show()
