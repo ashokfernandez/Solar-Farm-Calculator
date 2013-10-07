@@ -3,6 +3,13 @@ import sys
 import wx
 import SolarFarmGUI
 
+# ------------------------------------------------------------------------------------------------------
+# CONSTANTS
+# ------------------------------------------------------------------------------------------------------
+
+RED = (255,0,0, 200)
+BLACK = (0,0,0)
+WHITE = (255,255,255,255)
 
 # ------------------------------------------------------------------------------------------------------
 # UTILITY FUNCTIONS
@@ -29,6 +36,12 @@ def get_currency_list():
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
 		return currencies
+
+
+
+
+
+
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -74,9 +87,87 @@ class DialogBox_FatalError(SolarFarmGUI.FatalError):
 		sys.exit()
 
 # ------------------------------------------------------------------------------------------------------
-# MAIN APPLICATION FRAME
+# INPUT VALIDATION CLASS
 # ------------------------------------------------------------------------------------------------------
 
+# Encapsulate data entry and validation
+class InputField(object):
+	'''Stores an input field and corrsponding label and encapsulates validation of the input field'''
+	RED = (255,0,0, 200)
+	BLACK = (0,0,0)
+	WHITE = (255,255,255,255)
+
+	''' Holds an input field wxTextCtl and it's corrosponding label'''
+	def __init__(self, field, label, condition='', upperLimit=False, lowerLimit=False):
+		self.field = field
+		self.label = label
+		self.condition = condition.lower()
+		self.upperLimit = upperLimit
+		self.lowerLimit = lowerLimit
+
+	def __getFieldValue(self):
+		''' Returns the value of the wxTextCtl field'''
+		return self.field.GetValue()
+
+	def __setLabelColour(self, colour):
+		''' Sets the colour of the wxStaticText label, colour is a 3 or 4 length tuple
+		of RGB or RGBA values between 0-255'''
+		self.label.SetForegroundColour(colour)
+
+	def validateField(self):
+		''' Validates the input in the wxTextCtl inputField to be purely numeric. Condition can be either a string 
+		containing "p" or "n" to contrain the inputField to positive or negative numbers respectivly, and can also
+		contain "i" to specify the number must be an integer. These can be combined, for instance "pi" specifies a
+		positive integer. If the field is valid the wxStaticText label fieldLabel's colour text is set to black,
+		otherwise it is set to red. The funtion returns the fields value if the input was valid, otherwise it returns 
+		false. '''
+	
+		userInput = self.__getFieldValue()
+		result = None
+		
+		try:
+			# Attempt to evalute the users input as a mathmatical expression
+			userInput = eval(userInput)
+
+			# Check the value is an integer if it is supposed to be
+			if 'i' in self.condition:
+				if not isinstance(userInput,int):
+					raise TypeError
+
+			# Check the value if positive if it's supposed to be
+			if 'p' in self.condition:
+				if userInput < 0:
+					raise ValueError
+
+			# Check the value if negative if it's supposed to be
+			if 'n' in self.condition:
+				if userInput > 0:
+					raise ValueError
+
+			# Check the number if below it's upper limit
+			if self.upperLimit is not False:
+				if userInput > self.upperLimit:
+					raise ValueError				
+
+			if self.lowerLimit is not False:
+				if userInput < self.lowerLimit:
+					raise ValueError								
+			
+			# Otherwise the value is all good, set the fields to their appropriate colours
+			# and mark valid as true
+			self.__setLabelColour(BLACK) 
+			result = userInput
+
+		except:
+			# Something wasn't right about the number, mark the field as red and return 
+			self.__setLabelColour(RED) 
+			result = False
+
+		return result
+
+# ------------------------------------------------------------------------------------------------------
+# MAIN APPLICATION FRAME
+# ------------------------------------------------------------------------------------------------------
 
 # Inherit from the ApplicationFrame created in wxFowmBuilder and create the SolarFarmCalculator
 # class which implements the data processing of the GUI
@@ -104,6 +195,80 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.transformerCost_currency.SetItems(currencies)
 		self.TXCableCost_currency.SetItems(currencies)
 
+
+
+
+		# ----- Save a reference to all the input fields and their labels
+		self.inputFields = {}
+		
+		# SITE VARIABLES
+		self.inputFields['siteCost'] = InputField(self.siteCost_input, self.siteCost_label, 'p')
+		self.inputFields['siteAppreciation'] = InputField(self.siteAppreciation_input, self.siteAppreciation_label)
+		self.inputFields['siteLatitude'] = InputField(self.siteLatitude_input, self.siteLatitude_label, upperLimit=90, lowerLimit=-90)
+		self.inputFields['siteLongitude'] = InputField(self.siteLongitude_input, self.siteLongitude_label, upperLimit=180, lowerLimit=-180)
+		self.inputFields['siteGridLatitude'] = InputField(self.siteGridLatitude_input, self.siteGridLatitude_label, upperLimit=90, lowerLimit=-90)
+		self.inputFields['siteGridLongitude'] = InputField(self.siteGridLongitude_input, self.siteGridLongitude_label, upperLimit=180, lowerLimit=-180)
+		self.inputFields['siteNumPanels'] = InputField(self.siteNumPanels_input, self.siteNumPanels_label, 'pi')
+		self.inputFields['siteNumModules'] = InputField(self.siteNumModules_input, self.siteNumModules_label, 'pi')
+		self.inputFields['siteNumArrays'] = InputField(self.siteNumArrays_input, self.siteNumArrays_label, 'pi')
+		self.inputFields['siteNumTransformers'] = InputField(self.siteNumTransformers_input, self.siteNumTransformers_label, 'pi')
+		self.inputFields['siteNumInverters'] = InputField(self.siteNumInverters_input, self.siteNumInverters_label, 'pi')
+		self.inputFields['siteNumCircuitBreakers'] = InputField(self.siteNumCircuitBreakers_input, self.siteNumCircuitBreakers_label, 'pi')
+
+		# FINANCIAL VARIABLES
+		self.inputFields['financialInterestRate'] = InputField(self.financialInterestRate_input, self.financialInterestRate_label)
+		self.inputFields['financialMiscExpenses'] = InputField(self.financialMiscExpenses_input, self.financialMiscExpenses_label, 'p')
+		self.inputFields['financialMaintenance'] = InputField(self.financialMaintenance_input, self.financialMaintenance_label, 'p')
+		self.inputFields['financialPowerPrice'] = InputField(self.financialPowerPrice_input, self.financialPowerPrice_label, 'p')
+
+		# PANEL VARIABLES
+		self.inputFields['panelVoltage'] = InputField(self.panelVoltage_input, self.panelVoltage_label, 'p')
+		self.inputFields['panelAngle'] = InputField(self.panelAngle_input, self.panelAngle_label, 'p')
+		self.inputFields['panelEffciency'] = InputField(self.panelEffciency_input, self.panelEffciency_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['panelDegradation'] = InputField(self.panelDegradation_input, self.panelDegradation_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['panelArea'] = InputField(self.panelArea_input, self.panelArea_label, 'p')
+		self.inputFields['panelCost'] = InputField(self.panelCost_input, self.panelCost_label, 'p')
+		self.inputFields['panelDepreciation'] = InputField(self.panelDepreciation_input, self.panelDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# DC CABLE VARIABLES
+		self.inputFields['DCCableDiameter'] = InputField(self.DCCableDiameter_input, self.DCCableDiameter_label, 'p')
+		self.inputFields['DCCableLength'] = InputField(self.DCCableLength_input, self.DCCableLength_label, 'p')
+		self.inputFields['DCCableCost'] = InputField(self.DCCableCost_input, self.DCCableCost_label, 'p')
+		self.inputFields['DCCableDepreciation'] = InputField(self.DCCableDepreciation_input, self.DCCableDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# INVERTER VARIABLES
+		self.inputFields['inverterPowerFactor'] = InputField(self.inverterPowerFactor_input, self.inverterPowerFactor_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['inverterEfficiency'] = InputField(self.inverterEfficiency_input, self.inverterEfficiency_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['inverterOutputVoltage'] = InputField(self.inverterOutputVoltage_input, self.inverterOutputVoltage_label, 'p')
+		self.inputFields['inverterCost'] = InputField(self.inverterCost_input, self.inverterCost_label, 'p')
+		self.inputFields['inverterDepreciation'] = InputField(self.inverterDepreciation_input, self.inverterDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# AC CABLE VARIABLES
+		self.inputFields['ACCableDiameter'] = InputField(self.ACCableDiameter_input, self.ACCableDiameter_label, 'p')
+		self.inputFields['ACCableNumStrands'] = InputField(self.ACCableNumStrands_input, self.ACCableNumStrands_label, 'pi')
+		self.inputFields['ACCableLength'] = InputField(self.ACCableLength_input, self.ACCableLength_label, 'p')
+		self.inputFields['ACCableCost'] = InputField(self.ACCableCost_input, self.ACCableCost_label, 'p')
+		self.inputFields['ACCableDepreciation'] = InputField(self.ACCableDepreciation_input, self.ACCableDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# TRANSFORMER VARIABLES
+		self.inputFields['transformerOutputVoltage'] = InputField(self.transformerOutputVoltage_input, self.transformerOutputVoltage_label, 'p')
+		self.inputFields['transformerEfficiency'] = InputField(self.transformerEfficiency_input, self.transformerEfficiency_label, lowerLimit=0, upperLimit=100)
+		self.inputFields['transformerRating'] = InputField(self.transformerRating_input, self.transformerRating_label, 'p')
+		self.inputFields['transformerCost'] = InputField(self.transformerCost_input, self.transformerCost_label, 'p')
+		self.inputFields['transformerDepreciation'] = InputField(self.transformerDepreciation_input, self.transformerDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# TX CABLE VARIABLES
+		self.inputFields['TXCableDiameter'] = InputField(self.TXCableDiameter_input, self.TXCableDiameter_label, 'p')
+		self.inputFields['TXCableNumStrands'] = InputField(self.TXCableNumStrands_input, self.TXCableNumStrands_label, 'pi')
+		self.inputFields['TXCableLength'] = InputField(self.TXCableLength_input, self.TXCableLength_label, 'p')
+		self.inputFields['TXCableCost'] = InputField(self.TXCableCost_input, self.TXCableCost_label, 'p')
+		self.inputFields['TXCableDepreciation'] = InputField(self.TXCableDepreciation_input, self.TXCableDepreciation_label, lowerLimit=0, upperLimit=100)
+
+		# CIRCUIT BREAKERS
+		self.inputFields['circuitBreakerCost'] = InputField(self.circuitBreakerCost_input, self.circuitBreakerCost_label, 'p')
+		self.inputFields['circuitBreakerDepreciation'] = InputField(self.circuitBreakerDepreciation_input, self.circuitBreakerDepreciation_label, lowerLimit=0, upperLimit=100)
+
+
 	def evt_closeApp_clicked( self, event ):
 		''' Terminates the program when the red cross is clicked on the main window'''
 		# DO ANY CLEAN UP HERE
@@ -112,16 +277,20 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 	def evt_runSimulation_clicked( self, event ):
 		
 		# Check the internet is on, if not then display the No internet dialog
-		if not internet_on():
-			DialogBox_NoInternet()
-			return None
+		# if not internet_on():
+			# DialogBox_NoInternet()
+			# return None
 		
+		for field in self.inputFields.values():
+			field.validateField()
 		# Otherwise try to validate the users data and if there is a problem, display
 		# the invalid data dialog
 		# if not validate_fields():
 		# DialogBox_IncompleteForm()
 
+
 		
+
 
 
 
