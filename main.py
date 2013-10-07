@@ -4,7 +4,7 @@ import sys
 import wx
 
 import SolarFarmGUI
-
+import SolarSimulation
 import SolarAssets
 import PyExchangeRates
 import ReverseGeocode
@@ -15,9 +15,9 @@ import AverageTemperatureData
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 import datetime
-	
-	
 
+
+	
 
 # ------------------------------------------------------------------------------------------------------
 # CONSTANTS
@@ -67,6 +67,65 @@ def datepicker_to_datetime(datepicker):
 	pyDate = datetime.date(startYear, startMonth, startDay)
 	return pyDate
 
+def FinancialFormatter(x, pos):
+    '''Converts a money amount into millions or billions if the value is big enough.
+       Used as a matplotlib axis formatter'''
+    
+    # If under a million, print like normal
+    if x < 1e6:
+    	format = '$%1.1f' % x
+    # Else if under a billion print the amount in millions
+    elif x < 1e9:
+    	format = '$%1.1fM' % (x*1e-6)
+    # Else print as billions
+    else:
+    	format = '$%1.1fB' % (x*1e-9)
+
+    return format
+
+
+FINANCIAL_RESULTS = None
+POWER_RESULTS = None
+
+def showResults():
+	global POWER_RESULTS
+	global FINANCIAL_RESULTS
+	# Plot the results
+	formatter = FuncFormatter(FinancialFormatter)
+
+	plt.figure(1)
+	plt.subplot(311)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'])
+	plt.title('Average Power of the PV farm')
+	plt.ylabel('Power (kW)')
+
+	plt.subplot(312)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['sunnyTime'], 'g')
+	plt.title('Electrical energy of the PV farm at GEP')
+	plt.ylabel('Energy (kWh)')
+
+	plt.subplot(313)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['totalEffciency'], 'r')
+	plt.title('Total efficiency of the PV farm')
+	plt.ylabel('Efficiency (%)')
+
+	plt.figure(2)
+	a = plt.subplot(311)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'])
+	plt.title('Net Asset Value')
+
+	a = plt.subplot(312)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
+	plt.title('Loan Value')
+
+	a = plt.subplot(313)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
+	plt.title('Accumlative Revenue')
+	
+	plt.show()
 
 def CreateSimulation(inputParameters, optionalInputParameters):
 	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation '''
@@ -174,13 +233,15 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 						  powerPrice = inputParameters['financialPowerPrice'], 
 						  baseCurrency=inputParameters['financialBaseCurrency'])
 
-	simulation = SolarAssets.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
+	simulation = SolarSimulation.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
 							PVPanel=panel, PVModule=module, PVArray=array, 
 		               		DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 		                   	AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
 	                       	numThreads=50, simulationTimestepMins=60)
 
 	return simulation
+
+
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -284,7 +345,8 @@ class DialogBox_ProgressDialog(object):
 
  	def closeDialog(self):
  		''' Closes the dialog box'''
-		self.progressBox.Destroy()
+		# self.progressBox.Destroy()
+		self.progressBox.EndModal(1)
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -508,7 +570,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# CURRENCIES
 		self.selectors['siteCurrency'] = self.siteCost_currency
-		self.selectors['financialCurrency'] = self.financialCurrency_currency
+		self.selectors['financialBaseCurrency'] = self.financialCurrency_currency
 		self.selectors['panelCurrency'] = self.panelCost_currency
 		self.selectors['circuitBreakerCurrency'] = self.circuitBreakerCost_currency
 		self.selectors['DCCableCurrency'] = self.DCCableCost_currency
@@ -673,7 +735,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 			simulation = CreateSimulation(inputData, optionalData)
 			
 			# Create a progress dialog
-			progressDialog = DialogBox_ProgressDialog()
+			progressDialog = DialogBox_ProgressDialog(self)
 
 			# Start the simulation and update the progress box
 			simulation.runPower()
@@ -681,28 +743,39 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 			# Keep checking the power progress and update the dialog box
 			while powerProgress < 95:
+				print powerProgress
 				wx.MilliSleep(150)
 				progressDialog.update(powerProgress)
 				powerProgress = simulation.getPowerProgress()
 
 			# Wait for the power to finish the run the financial
-			powerResults = simulation.getPowerResults()
+			global POWER_RESULTS
+			global FINANCIAL_RESULTS
+			POWER_RESULTS = simulation.getPowerResults()
 			progressDialog.update(98, "Running Financial Simulations")
 			
 			# This will block until it is done
 			simulation.runFinancial()
 
 			# Get the financial results and close the progress dialog
-			financialResults = simulation.getFinancial()
+			FINANCIAL_RESULTS = simulation.getFinancialResults()
 				
-
+			# Close the progress dialog
+			progressDialog.closeDialog()
 			
+			# self.showResults(powerResults, financialResults)
+			wx.CallLater(350, showResults)
+
+			return None
+
 		except ReverseGeocode.CountryNotFound:
 			DialogBox_GeoCodeError()
 			return None
 		# except:
 			# DialogBox_FatalError("Something went wrong in the simulation, the program will terminate now.\n Goodbye.")
-		
+			
+			
+	
 
 		
 		

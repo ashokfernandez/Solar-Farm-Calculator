@@ -145,51 +145,7 @@ def calcCableResistance(cable, temperature):
 # miscDepRate = 8           # Misc depreciation rate (# per year)
 # buyBackRate = 0.25        # Selling rate of power ($/kWh)
 
-class Financial(object):
-    ''' Class that stores the information relating to the finanical data that is independent of the
-    solar farm '''
-    exchange = CURRENCY_EXCHANGE
 
-    def __init__(self, maintenance, miscExpenses, interestRate, powerPrice, baseCurrency='USD'):
-        ''' Initialise the Financial object '''
-        self.baseCurrency = baseCurrency         # Base currency that results are returned in
-        self.interestRate = interestRate                                               # Interest rate (%/year)
-        self.maintenance = Financial.exchange.withdraw(maintenance,self.baseCurrency)  # Maintaince budget per year
-        self.loan = Financial.exchange.withdraw(miscExpenses,self.baseCurrency)        # + assets 
-        self.powerPrice = Financial.exchange.withdraw(powerPrice,self.baseCurrency)    # Selling rate of power (currency/kWh)
-        
-
-    def getDailyMaintenance(self):
-        ''' Return the maintenance budget per year '''
-        return self.maintenance / 365.0
-
-    def addToLoan(self, cost):
-        ''' Adds money to the initial cost '''
-        self.loan += cost
-        self.loan.convert(self.baseCurrency)
-
-    def makeLoanPayment(self, payment):
-        ''' Pays back money to the loan for the initial costs '''
-        self.loan -= payment
-        self.loan.convert(self.baseCurrency)
-
-    def accumlateDailyInterest(self):
-        ''' Adds interest to the intial expenses loan '''
-        if self.loan.getAmount() > 0:
-            self.loan *= (1 + self.interestRate/(365*100))
-            self.loan.convert(self.baseCurrency)
-
-    def getCurrentLoanValue(self):
-        ''' Returns the current value of the loan '''
-        return self.loan
-
-    def amountInBaseCurrency(self, money):
-        ''' Returns the value of a money object in the base currency of the loan'''
-        return money.convert(self.baseCurrency).getAmount()
-
-    def getPowerPrice(self):
-        ''' Return the selling rate of power '''
-        return self.powerPrice
 
 # --------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
@@ -511,7 +467,7 @@ class Simulation(object):
         itemsLeft = self.inputQueue.qsize()
         totalItems = self.numDays
 
-        progress = (float(itemsLeft) / totalItems) * 100 + 1
+        progress = ((float(totalItems - itemsLeft) / totalItems) * 100) + 1
         progress = round(progress)
 
         return progress
