@@ -3,9 +3,9 @@
 
 
 ## Author
-[Ashok Fernandez](https://github.com/ashokfernandez/)
-[Jarrad Raumati](https://github.com/jarradraumati/)
-[Darren O'Neill]
+[Ashok Fernandez](https://github.com/ashokfernandez/),
+[Jarrad Raumati](https://github.com/jarradraumati/),
+Darren O'Neill
 
 
 ## Description: 
