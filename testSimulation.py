@@ -14,7 +14,7 @@ gridLat = -43.521543
 gridLong = 172.571075
 
 startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2015, 1, 1)
+endDate = datetime.date(2023, 1, 1)
 
 # Get the site information from the Reverse Geocode
 code = ReverseGeocode.get_country_code(siteLat, siteLong)
@@ -61,7 +61,7 @@ financial = Financial(maintenance=30000, miscExpenses=(500000+500000), interestR
 simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
 	                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 	                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-                       numThreads=50, simulationTimestepMins=60)
+                       numThreads=10, simulationTimestepMins=120)
 
 
 results = simulation.run()
@@ -105,7 +105,7 @@ plt.title('Average Power of the PV farm')
 plt.ylabel('Power (kW)')
 
 plt.subplot(312)
-plt.plot(powerResults['days'], powerResults['sunnyTime'], 'g')
+plt.plot(powerResults['days'], powerResults['electricalEnergy'], 'g')
 plt.title('Electrical energy of the PV farm at GEP')
 plt.ylabel('Energy (kWh)')
 
@@ -114,20 +114,20 @@ plt.plot(powerResults['days'], powerResults['totalEffciency'], 'r')
 plt.title('Total efficiency of the PV farm')
 plt.ylabel('Efficiency (%)')
 
-# plt.figure(2)
-# a = plt.subplot(311)
-# a.yaxis.set_major_formatter(formatter)
-# plt.plot(financialResults['days'], financialResults['netAssetValue'])
-# plt.title('Net Asset Value')
+plt.figure(2)
+a = plt.subplot(311)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['netAssetValue'])
+plt.title('Net Asset Value')
 
-# a = plt.subplot(312)
-# a.yaxis.set_major_formatter(formatter)
-# plt.plot(financialResults['days'], financialResults['loanValue'], 'r')
-# plt.title('Loan Value')
+a = plt.subplot(312)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['loanValue'], 'r')
+plt.title('Loan Value')
 
-# a = plt.subplot(313)
-# a.yaxis.set_major_formatter(formatter)
-# plt.plot(financialResults['days'], financialResults['accumulativeRevenue'], 'g')
-# plt.title('Accumlative Revenue')
+a = plt.subplot(313)
+a.yaxis.set_major_formatter(formatter)
+plt.plot(financialResults['days'], financialResults['accumulativeRevenue'], 'g')
+plt.title('Accumlative Revenue')
 
 plt.show()
