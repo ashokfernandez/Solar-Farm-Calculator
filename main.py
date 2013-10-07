@@ -1,11 +1,23 @@
+
 import urllib2                    # For testing the internet connection
 import sys
 import wx
+
 import SolarFarmGUI
+import SolarSimulation
+import SolarAssets
+import PyExchangeRates
+import ReverseGeocode
+import Countries
+import AverageTemperatureData
+
+
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
-# import SimulationController
+import datetime
 
+
+	
 
 # ------------------------------------------------------------------------------------------------------
 # CONSTANTS
@@ -42,8 +54,192 @@ def get_currency_list():
 		return currencies
 
 
+def datepicker_to_datetime(datepicker):
+	''' Takes a wxDateCtrl object and returns a datetime object of the date selected in the widget'''
+	
+	# Extract the date data from the wxDateCtrl object
+	wxDate =  datepicker.GetValue()
+	startYear = wxDate.GetYear()
+	startMonth = wxDate.GetMonth() + 1 # Months are done from 0-11 in wxPython, datetime needs 1-12
+	startDay = wxDate.GetDay()
+	
+	# Create the python datetime object and return it
+	pyDate = datetime.date(startYear, startMonth, startDay)
+	return pyDate
+
+def FinancialFormatter(x, pos):
+    '''Converts a money amount into millions or billions if the value is big enough.
+       Used as a matplotlib axis formatter'''
+    
+    # If under a million, print like normal
+    if x < 1e6:
+    	format = '$%1.1f' % x
+    # Else if under a billion print the amount in millions
+    elif x < 1e9:
+    	format = '$%1.1fM' % (x*1e-6)
+    # Else print as billions
+    else:
+    	format = '$%1.1fB' % (x*1e-9)
+
+    return format
 
 
+FINANCIAL_RESULTS = None
+POWER_RESULTS = None
+
+def showResults():
+	global POWER_RESULTS
+	global FINANCIAL_RESULTS
+	# Plot the results
+	formatter = FuncFormatter(FinancialFormatter)
+
+	plt.figure(1)
+	plt.subplot(311)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'])
+	plt.title('Average Power of the PV farm')
+	plt.ylabel('Power (kW)')
+
+	plt.subplot(312)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['sunnyTime'], 'g')
+	plt.title('Electrical energy of the PV farm at GEP')
+	plt.ylabel('Energy (kWh)')
+
+	plt.subplot(313)
+	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['totalEffciency'], 'r')
+	plt.title('Total efficiency of the PV farm')
+	plt.ylabel('Efficiency (%)')
+
+	plt.figure(2)
+	a = plt.subplot(311)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'])
+	plt.title('Net Asset Value')
+
+	a = plt.subplot(312)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
+	plt.title('Loan Value')
+
+	a = plt.subplot(313)
+	a.yaxis.set_major_formatter(formatter)
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
+	plt.title('Accumlative Revenue')
+	
+	plt.show()
+
+def CreateSimulation(inputParameters, optionalInputParameters):
+	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation '''
+
+	# ---------------------- GEO CODING ---------------------------
+
+	# Get the site information from the Reverse Geocode
+	code = ReverseGeocode.get_country_code(inputParameters['siteLatitude'], inputParameters['siteLongitude'])
+
+	# Throw an exception if the GeoCode Fails
+	if code == False:
+		raise ReverseGeocode.CountryNotFound("Country Not Found at Given Lat, Long")
+
+
+	# ------------------ LOAD DATA FROM FILES ----------------------
+	
+	# Load the temperature data
+	temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
+	
+
+
+	# ------------- CALCULATE OPTIONAL PARAMETERS ------------------
+
+	# If the user specified for the transmission line length to be calculated, then calculate it
+	if optionalInputParameters['TXCableLength'] == None:
+		TXCableLength = calcLength(inputParameters['siteLatitude'], inputParameters['siteLongitude'], 
+								   inputParameters['siteGridLatitude'], inputParameters['siteGridLongitude'])
+	else:
+		TXCableLength = optionalInputParameters['TXCableLength']
+
+
+	# --------------- CREATE SIMULATION OBJECTS ---------------------
+	
+	# Constants
+	MATERIALS = {}
+	MATERIALS['Copper'] = SolarAssets.Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
+	MATERIALS['Aluminium'] = SolarAssets.Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
+
+	# Instantiate the panel object
+	panel = SolarAssets.PVPanel(voltage=inputParameters['panelVoltage'], 
+		 			efficiency=inputParameters['panelAngle'], 
+		 			degradationRate=inputParameters['panelDegradation'], 
+		 			area=inputParameters['panelArea'], 
+		 			cost=inputParameters['panelCost'], 
+		 			currency=inputParameters['panelCurrency'],
+		 			depRate=inputParameters['panelDepreciation'])
+
+	module = SolarAssets.PVModule(panelType=panel, 
+		 			  panelNum=inputParameters['siteNumPanels'])
+	
+	array = SolarAssets.PVArray(moduleType=module, 
+					moduleNum=inputParameters['siteNumModules'], 
+					arrayAngle=inputParameters['panelAngle'])
+
+	
+
+	dcCable = SolarAssets.DCCable(diameter=inputParameters['DCCableDiameter'], 
+					  material=MATERIALS[inputParameters['DCCableMaterial']], 
+					  length=inputParameters['DCCableLength'], 
+					  costPerMeter=inputParameters['DCCableCost'], 
+					  depRate=inputParameters['DCCableDepreciation'])	
+
+	ac1Cable = SolarAssets.AC1Cable(strandNum=inputParameters['ACCableNumStrands'], 
+						diameter=inputParameters['ACCableDiameter'], 
+						material=MATERIALS[inputParameters['ACCableMaterial']], 
+						length=inputParameters['ACCableLength'], 
+						costPerMeter=inputParameters['ACCableCost'], 
+						depRate=inputParameters['ACCableDepreciation'])
+
+	ac2Cable = SolarAssets.AC2Cable(strandNum=inputParameters['TXCableNumStrands'], 
+						diameter=inputParameters['TXCableDiameter'], 
+						material=MATERIALS[inputParameters['TXCableMaterial']], 
+						length=TXCableLength, 
+						costPerMeter=inputParameters['TXCableCost'], 
+						depRate=inputParameters['TXCableDepreciation'])
+
+	inverter = SolarAssets.Inverter(powerFactor=inputParameters['inverterPowerFactor'], 
+						efficiency=inputParameters['inverterEfficiency'], 
+						voltage=inputParameters['inverterOutputVoltage'], 
+						cost=inputParameters['inverterCost'] , 
+						depRate=inputParameters['inverterDepreciation'])
+	
+	transformer = SolarAssets.Transformer(voltage=inputParameters['transformerOutputVoltage'], 
+							  efficiency=inputParameters['transformerEfficiency'] , 
+							  VARating=inputParameters['transformerRating'] , 
+							  cost=inputParameters['transformerCost'] , 
+							  depRate=inputParameters['transformerDepreciation'])
+
+	circuitBreaker = SolarAssets.CircuitBreaker(cost=inputParameters['circuitBreakerCost'])
+
+	site = SolarAssets.Site(transformerNum=inputParameters['siteNumTransformers'], 
+				arrayNum=inputParameters['siteNumArrays'], 
+				latitude=inputParameters['siteLatitude'], 
+				longitude=inputParameters['siteLongitude'],
+		  		circuitBreakerNum=inputParameters['siteNumCircuitBreakers'], 
+		  		inverterNum=inputParameters['siteNumInverters'], 
+		  		temperature=temperature, 
+		  		landPrice=inputParameters['siteCost'],
+		  		currency=inputParameters['siteCurrency'],
+				landAppRate=inputParameters['siteAppreciation'])
+
+	financial = SolarAssets.Financial(maintenance=inputParameters['financialMaintenance'], 
+						  miscExpenses=inputParameters['financialMiscExpenses'], 
+						  interestRate =inputParameters['financialInterestRate'],
+						  powerPrice = inputParameters['financialPowerPrice'], 
+						  baseCurrency=inputParameters['financialBaseCurrency'])
+
+	simulation = SolarSimulation.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
+							PVPanel=panel, PVModule=module, PVArray=array, 
+		               		DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
+		                   	AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
+	                       	numThreads=50, simulationTimestepMins=60)
+
+	return simulation
 
 
 
@@ -90,9 +286,37 @@ class DialogBox_FatalError(SolarFarmGUI.FatalError):
 		self.EndModal(1)
 		sys.exit()
 
+
+# Implement the functionality of the GeoCode error message
+class DialogBox_GeoCodeError(SolarFarmGUI.GeoCodeError):
+	def __init__( self ):
+		''' Creates the "GeoCode Error" dialog box and uses the given string as the error message.
+		the program will quit when the dialog is dismissed'''
+		SolarFarmGUI.GeoCodeError.__init__(self, None)
+		self.ShowModal()
+
+	def evt_dialogOK_clicked( self, event ):
+		''' Closes the window when the OK button is pressed'''
+		self.EndModal(1)
+
+
+# Implement the functionality of the Date error message
+class DialogBox_DateError(SolarFarmGUI.DateError):
+	def __init__( self ):
+		''' Creates the "Date Error" dialog box and uses the given string as the error message.
+		the program will quit when the dialog is dismissed'''
+		SolarFarmGUI.DateError.__init__(self, None)
+		self.ShowModal()
+
+	def evt_dialogOK_clicked( self, event ):
+		''' Closes the window when the OK button is pressed'''
+		self.EndModal(1)
+
+
+
 # Class to show a progress dialog when the simulation is running
 class DialogBox_ProgressDialog(object):
-	def __init__(self, parent, maxItems):
+	def __init__(self, parent, maxItems=100):
 		''' Dialog box to show while the simulation is in progress '''
 
 		# Add 10% to the max items to account for the financial simulation
@@ -110,18 +334,19 @@ class DialogBox_ProgressDialog(object):
                                 #| wx.PD_ESTIMATED_TIME
                                 | wx.PD_REMAINING_TIME)
  		
-	def update(self, itemsLeft):
+	def update(self, itemsLeft, newMessage=None):
 		''' Passes the dialog the updated amount of items left in the simulation queue '''
 		
 		# If we are 90% of the way through tell the user we are up to the financials
-		if itemsLeft > (self.maxItems * 0.9):
-			self.progressBox.Update(itemsLeft, "Simulating Financial Returns")
+		if newMessage is not None:
+			self.progressBox.Update(itemsLeft, newMessage)
 		else:
 			self.progressBox.Update(itemsLeft)
 
  	def closeDialog(self):
  		''' Closes the dialog box'''
-		self.progressBox.Destroy()
+		# self.progressBox.Destroy()
+		self.progressBox.EndModal(1)
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -345,7 +570,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# CURRENCIES
 		self.selectors['siteCurrency'] = self.siteCost_currency
-		self.selectors['financialCurrency'] = self.financialCurrency_currency
+		self.selectors['financialBaseCurrency'] = self.financialCurrency_currency
 		self.selectors['panelCurrency'] = self.panelCost_currency
 		self.selectors['circuitBreakerCurrency'] = self.circuitBreakerCost_currency
 		self.selectors['DCCableCurrency'] = self.DCCableCost_currency
@@ -442,14 +667,13 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		''' Event that is run when the "Run Simulation" button is clicked. This will validate all the inputs, check for
 		an internet connection and run the simulation if all the inputs are correct. Otherwise an error dialog is shown
 		telling the user what they did wrong'''
-		
-
 
 		# Check the internet is on, if not then display the No internet dialog
 		if not internet_on():
 			DialogBox_NoInternet()
 			return None
 		
+
 		# Save the validated input data to a dictionary
 		inputData = {}
 
@@ -470,12 +694,31 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 			DialogBox_IncompleteForm()
 			return None
 
+
+
+		# Check the dates are valid
+		startDate = datepicker_to_datetime(self.simulationStart_input)
+		endDate = datepicker_to_datetime(self.simulationEnd_input)
+
+		# If the dates are invalid throw an exception
+		if (endDate - startDate).days < 0:
+			DialogBox_DateError()
+			return None
+
+		# Otherwise save the dates
+		else:
+			inputData['startDate'] = startDate
+			inputData['endDate'] = endDate
+
+
+
 		# Get the value of the selector boxes
 		for key in self.selectors.keys():
 			
-			# Get the index and value of the option currently selected
+			# Get the index and value of the option currently selected - convert from unicode to str
 			index = self.selectors[key].GetCurrentSelection()	
 			value = self.selectors[key].GetString(index)
+			value = str(value)
 
 			# If the key is a currency, strip the name of the currency off so just the code remains
 			if 'Currency' in key:
@@ -485,10 +728,54 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 			# Save the selection
 			inputData[key] = value
 
-		DialogBox_ProgressDialog(self, 100)
-		# SimulationController.InitialiseSimulation(inputData, optionalData)
 
-		# print data['power'], data['financial']
+		# Try to run the simulation, catching any errors that may occur
+		try:
+			# Create a simulation
+			simulation = CreateSimulation(inputData, optionalData)
+			
+			# Create a progress dialog
+			progressDialog = DialogBox_ProgressDialog(self)
+
+			# Start the simulation and update the progress box
+			simulation.runPower()
+			powerProgress = simulation.getPowerProgress()
+
+			# Keep checking the power progress and update the dialog box
+			while powerProgress < 95:
+				print powerProgress
+				wx.MilliSleep(150)
+				progressDialog.update(powerProgress)
+				powerProgress = simulation.getPowerProgress()
+
+			# Wait for the power to finish the run the financial
+			global POWER_RESULTS
+			global FINANCIAL_RESULTS
+			POWER_RESULTS = simulation.getPowerResults()
+			progressDialog.update(98, "Running Financial Simulations")
+			
+			# This will block until it is done
+			simulation.runFinancial()
+
+			# Get the financial results and close the progress dialog
+			FINANCIAL_RESULTS = simulation.getFinancialResults()
+				
+			# Close the progress dialog
+			progressDialog.closeDialog()
+			
+			# self.showResults(powerResults, financialResults)
+			wx.CallLater(350, showResults)
+
+			return None
+
+		except ReverseGeocode.CountryNotFound:
+			DialogBox_GeoCodeError()
+			return None
+		# except:
+			# DialogBox_FatalError("Something went wrong in the simulation, the program will terminate now.\n Goodbye.")
+			
+			
+	
 
 		
 		

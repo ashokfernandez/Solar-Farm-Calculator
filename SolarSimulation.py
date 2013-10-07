@@ -145,51 +145,7 @@ def calcCableResistance(cable, temperature):
 # miscDepRate = 8           # Misc depreciation rate (# per year)
 # buyBackRate = 0.25        # Selling rate of power ($/kWh)
 
-class Financial(object):
-    ''' Class that stores the information relating to the finanical data that is independent of the
-    solar farm '''
-    exchange = CURRENCY_EXCHANGE
 
-    def __init__(self, maintenance, miscExpenses, interestRate, powerPrice, baseCurrency='USD'):
-        ''' Initialise the Financial object '''
-        self.baseCurrency = baseCurrency         # Base currency that results are returned in
-        self.interestRate = interestRate                                               # Interest rate (%/year)
-        self.maintenance = Financial.exchange.withdraw(maintenance,self.baseCurrency)  # Maintaince budget per year
-        self.loan = Financial.exchange.withdraw(miscExpenses,self.baseCurrency)        # + assets 
-        self.powerPrice = Financial.exchange.withdraw(powerPrice,self.baseCurrency)    # Selling rate of power (currency/kWh)
-        
-
-    def getDailyMaintenance(self):
-        ''' Return the maintenance budget per year '''
-        return self.maintenance / 365.0
-
-    def addToLoan(self, cost):
-        ''' Adds money to the initial cost '''
-        self.loan += cost
-        self.loan.convert(self.baseCurrency)
-
-    def makeLoanPayment(self, payment):
-        ''' Pays back money to the loan for the initial costs '''
-        self.loan -= payment
-        self.loan.convert(self.baseCurrency)
-
-    def accumlateDailyInterest(self):
-        ''' Adds interest to the intial expenses loan '''
-        if self.loan.getAmount() > 0:
-            self.loan *= (1 + self.interestRate/(365*100))
-            self.loan.convert(self.baseCurrency)
-
-    def getCurrentLoanValue(self):
-        ''' Returns the current value of the loan '''
-        return self.loan
-
-    def amountInBaseCurrency(self, money):
-        ''' Returns the value of a money object in the base currency of the loan'''
-        return money.convert(self.baseCurrency).getAmount()
-
-    def getPowerPrice(self):
-        ''' Return the selling rate of power '''
-        return self.powerPrice
 
 # --------------------------------------------------------------------------------------------------
 # SIMULATION DETAILS
@@ -496,8 +452,70 @@ class Simulation(object):
     def setFinishDate(self, date):
         self.finish = date
 
-    def __runFinancial(self):
-        '''Runs the finicial simulation, requires the results from power flow simulation'''
+
+    def runPower(self):
+        ''' Runs the power flow simulation'''
+        numberOfSimulationDays = self.inputQueue.qsize()
+
+        # Spawn the threads
+        for i in range(self.numThreads):
+            simulationThread = thread_SimulateDay(self.inputQueue, self.outputQueue, self.simulationTimestepMins)
+            simulationThread.setDaemon(True)
+            simulationThread.start()
+
+    def getPowerProgress(self):
+        ''' Returns percentage of days simulated in the power simulation as a number between 0 and 100 '''
+        itemsLeft = self.inputQueue.qsize()
+        totalItems = self.numDays
+
+        progress = ((float(totalItems - itemsLeft) / totalItems) * 100) + 1
+        progress = round(progress)
+
+        return progress
+
+
+    def getPowerResults(self):
+        ''' Processes and gets the power results'''
+        # Join threads
+        self.inputQueue.join()
+
+        # Dequeue the results
+        resultDays = []
+        while not self.outputQueue.empty():
+            resultDays.append(self.outputQueue.get())
+            self.outputQueue.task_done()
+
+        # Sort the resultant simulation dates into order
+        resultDays.sort(key=operator.attrgetter('date'))
+
+        days = []
+        electricalEnergy = []
+        totalEffciency = []
+        electricalEffciency = []
+        averagePower = []
+        sunnyTime = []
+
+        for day in resultDays:
+            days.append(day.date)
+            electricalEnergy.append(day.electricalEnergy / 1000) # Converts energy to kWh
+            electricalEffciency.append(day.electricalEffciency)
+            totalEffciency.append(day.totalEffciency)
+            averagePower.append(day.averagePower / 1000) # Converts power to kW
+            sunnyTime.append(day.sunnyTime)
+
+        self.powerResults = {
+            'days' : self.days,
+            'electricalEnergy' : electricalEnergy,
+            'electricalEffciency' : electricalEffciency,
+            'totalEffciency' : totalEffciency,
+            'averagePower' : averagePower,
+            'sunnyTime' : sunnyTime
+        }
+
+        return self.powerResults
+
+    def runFinancial(self):
+        '''Runs the finicial simulation, requires the results from power flow simulation. Blocks until complete'''
 
         # Sum the costs of all the assets 
         initalCosts = self.parameters['PVArray'].getCost()
@@ -577,88 +595,18 @@ class Simulation(object):
             'accumulativeRevenue' : accumulativeRevenue,
         }
 
+    def getFinancialResults(self):
+        ''' Returns the financial results'''
+        return self.financialResults
 
-    def __runPower(self):
-        ''' Runs the power flow simulation'''
-        numberOfSimulationDays = self.inputQueue.qsize()
 
-        # Spawn the threads
-        for i in range(self.numThreads):
-            simulationThread = thread_SimulateDay(self.inputQueue, self.outputQueue, self.simulationTimestepMins)
-            simulationThread.setDaemon(True)
-            simulationThread.start()
+    # def run(self):
+    #     ''' Runs the power simulation then the financial simulation and returns a dictionary with the
+    #     results from each '''
+    #     self.runPower()
+    #     self.runFinancial()
+
         
-        # Create a progress bar
-        widgets = ['Running Simulation: ', progressbar.Percentage(), ' ', 
-                   progressbar.Bar(), ' ', progressbar.ETA()]
-        bar = progressbar.ProgressBar(maxval=numberOfSimulationDays, widgets=widgets)
-        bar.start()
-
-        # While the amount of output objects is less than the amount of input objects, update the progress bar
-        completedSimulations = 0
-        while(completedSimulations < numberOfSimulationDays):
-            # Stops the console from being updated unecesseraly
-            sleep(0.25)
-            completedSimulations = (numberOfSimulationDays - self.inputQueue.qsize())
-            bar.update(completedSimulations)
-
-        # Finish up the progress bar
-        bar.finish()
-
-        print "Finished printing bar"
-
-        # Join threads
-        self.inputQueue.join()
-
-        print "Finished joining threads"
-
-        # Dequeue the results
-        resultDays = []
-        while not self.outputQueue.empty():
-            resultDays.append(self.outputQueue.get())
-            self.outputQueue.task_done()
-
-        print "Finished Dequeueing results"
-
-        # Sort the resultant simulation dates into order
-        resultDays.sort(key=operator.attrgetter('date'))
-
-        print "Sorted results"
-
-        days = []
-        electricalEnergy = []
-        totalEffciency = []
-        electricalEffciency = []
-        averagePower = []
-        sunnyTime = []
-
-        for day in resultDays:
-            days.append(day.date)
-            electricalEnergy.append(day.electricalEnergy / 1000) # Converts energy to kWh
-            electricalEffciency.append(day.electricalEffciency)
-            totalEffciency.append(day.totalEffciency)
-            averagePower.append(day.averagePower / 1000) # Converts power to kW
-            sunnyTime.append(day.sunnyTime)
-
-        print "Split data"
-
-        self.powerResults = {
-            'days' : self.days,
-            'electricalEnergy' : electricalEnergy,
-            'electricalEffciency' : electricalEffciency,
-            'totalEffciency' : totalEffciency,
-            'averagePower' : averagePower,
-            'sunnyTime' : sunnyTime
-        }
-
-
-    def run(self):
-        ''' Runs the power simulation then the financial simulation and returns a dictionary with the
-        results from each '''
-        self.__runPower()
-        self.__runFinancial()
-
-        return {'power': self.powerResults, 'financial': self.financialResults}
 
 # --------------------------------------------------------------------------------------------------
 # Redundant code
