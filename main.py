@@ -87,13 +87,22 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		#initialize parent class
 		SolarFarmGUI.ApplicationFrame.__init__(self,parent)
 
-		# Attempt to load the list of currencies
+		# Attempt to load the list of avaliable currencies
 		try:
 			currencies = get_currency_list()
 		except:
 			DialogBox_FatalError("Unable to load the list of currencies from currencyList.txt")
 
-		print currencies
+		# Set the values of all the currencie lists to the list of avaliable currencies
+		self.siteCost_currency.SetItems(currencies)
+		self.financialCurrency_currency.SetItems(currencies)
+		self.panelCost_currency.SetItems(currencies)
+		self.circuitBreakerCost_currency.SetItems(currencies)
+		self.DCCableCost_currency.SetItems(currencies)
+		self.inverterCost_currency.SetItems(currencies)
+		self.ACCableCost_currency.SetItems(currencies)
+		self.transformerCost_currency.SetItems(currencies)
+		self.TXCableCost_currency.SetItems(currencies)
 
 	def evt_closeApp_clicked( self, event ):
 		''' Terminates the program when the red cross is clicked on the main window'''
@@ -110,7 +119,8 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# Otherwise try to validate the users data and if there is a problem, display
 		# the invalid data dialog
 		# if not validate_fields():
-			# DialogBox_IncompleteForm()
+		# DialogBox_IncompleteForm()
+
 		
 
 

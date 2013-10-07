@@ -180,7 +180,7 @@
                             <property name="bitmap"></property>
                             <property name="label">Calculator</property>
                             <property name="select">0</property>
-                            <object class="wxPanel" expanded="0">
+                            <object class="wxPanel" expanded="1">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
@@ -254,7 +254,7 @@
                                 <event name="OnSetFocus"></event>
                                 <event name="OnSize"></event>
                                 <event name="OnUpdateUI"></event>
-                                <object class="wxFlexGridSizer" expanded="0">
+                                <object class="wxFlexGridSizer" expanded="1">
                                     <property name="cols">1</property>
                                     <property name="flexible_direction">wxBOTH</property>
                                     <property name="growablecols"></property>
@@ -266,7 +266,7 @@
                                     <property name="permission">none</property>
                                     <property name="rows">2</property>
                                     <property name="vgap">0</property>
-                                    <object class="sizeritem" expanded="0">
+                                    <object class="sizeritem" expanded="1">
                                         <property name="border">5</property>
                                         <property name="flag">wxALIGN_CENTER</property>
                                         <property name="proportion">1</property>
@@ -4981,11 +4981,11 @@
                                             </object>
                                         </object>
                                     </object>
-                                    <object class="sizeritem" expanded="0">
+                                    <object class="sizeritem" expanded="1">
                                         <property name="border">5</property>
                                         <property name="flag"></property>
                                         <property name="proportion">1</property>
-                                        <object class="wxStaticBoxSizer" expanded="0">
+                                        <object class="wxStaticBoxSizer" expanded="1">
                                             <property name="id">wxID_ANY</property>
                                             <property name="label">Component Parameters</property>
                                             <property name="minimum_size"></property>
@@ -4993,11 +4993,11 @@
                                             <property name="orient">wxVERTICAL</property>
                                             <property name="permission">none</property>
                                             <event name="OnUpdateUI"></event>
-                                            <object class="sizeritem" expanded="0">
+                                            <object class="sizeritem" expanded="1">
                                                 <property name="border">5</property>
                                                 <property name="flag">wxEXPAND</property>
                                                 <property name="proportion">1</property>
-                                                <object class="wxFlexGridSizer" expanded="0">
+                                                <object class="wxFlexGridSizer" expanded="1">
                                                     <property name="cols">4</property>
                                                     <property name="flexible_direction">wxBOTH</property>
                                                     <property name="growablecols"></property>
@@ -5009,11 +5009,11 @@
                                                     <property name="permission">none</property>
                                                     <property name="rows">1</property>
                                                     <property name="vgap">0</property>
-                                                    <object class="sizeritem" expanded="0">
+                                                    <object class="sizeritem" expanded="1">
                                                         <property name="border">5</property>
                                                         <property name="flag">wxEXPAND|wxLEFT|wxRIGHT</property>
                                                         <property name="proportion">1</property>
-                                                        <object class="wxFlexGridSizer" expanded="0">
+                                                        <object class="wxFlexGridSizer" expanded="1">
                                                             <property name="cols">1</property>
                                                             <property name="flexible_direction">wxBOTH</property>
                                                             <property name="growablecols"></property>
@@ -5025,7 +5025,7 @@
                                                             <property name="permission">none</property>
                                                             <property name="rows">2</property>
                                                             <property name="vgap">0</property>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag">wxBOTTOM|wxFIXED_MINSIZE|wxTOP</property>
                                                                 <property name="proportion">0</property>
@@ -7259,7 +7259,7 @@
                                                                     </object>
                                                                 </object>
                                                             </object>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag"></property>
                                                                 <property name="proportion">1</property>
@@ -7339,7 +7339,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerCost_label</property>
+                                                                                            <property name="name">circuitBreakerCost_label</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7422,7 +7422,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerCost_input</property>
+                                                                                            <property name="name">circuitBreakerCost_input</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7513,7 +7513,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerCost_currency</property>
+                                                                                            <property name="name">circuitBreakerCost_currency</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7601,7 +7601,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerCost_units</property>
+                                                                                            <property name="name">circuitBreakerCost_units</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7702,7 +7702,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerDepreciation_label</property>
+                                                                                            <property name="name">circuitBreakerDepreciation_label</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7785,7 +7785,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerDepreciation_input</property>
+                                                                                            <property name="name">circuitBreakerDepreciation_input</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7876,7 +7876,7 @@
                                                                                             <property name="minimize_button">0</property>
                                                                                             <property name="minimum_size"></property>
                                                                                             <property name="moveable">1</property>
-                                                                                            <property name="name">CircuitBreakerDepreciation_units</property>
+                                                                                            <property name="name">circuitBreakerDepreciation_units</property>
                                                                                             <property name="pane_border">1</property>
                                                                                             <property name="pane_position"></property>
                                                                                             <property name="pane_size"></property>
@@ -7927,11 +7927,11 @@
                                                             </object>
                                                         </object>
                                                     </object>
-                                                    <object class="sizeritem" expanded="0">
+                                                    <object class="sizeritem" expanded="1">
                                                         <property name="border">5</property>
                                                         <property name="flag">wxLEFT|wxRIGHT</property>
                                                         <property name="proportion">1</property>
-                                                        <object class="wxFlexGridSizer" expanded="0">
+                                                        <object class="wxFlexGridSizer" expanded="1">
                                                             <property name="cols">1</property>
                                                             <property name="flexible_direction">wxBOTH</property>
                                                             <property name="growablecols"></property>
@@ -7943,7 +7943,7 @@
                                                             <property name="permission">none</property>
                                                             <property name="rows">3</property>
                                                             <property name="vgap">0</property>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag">wxBOTTOM|wxFIXED_MINSIZE|wxTOP</property>
                                                                 <property name="proportion">0</property>
@@ -9348,7 +9348,7 @@
                                                                     </object>
                                                                 </object>
                                                             </object>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag">wxBOTTOM|wxFIXED_MINSIZE|wxTOP</property>
                                                                 <property name="proportion">0</property>
@@ -10841,11 +10841,11 @@
                                                             </object>
                                                         </object>
                                                     </object>
-                                                    <object class="sizeritem" expanded="0">
+                                                    <object class="sizeritem" expanded="1">
                                                         <property name="border">5</property>
                                                         <property name="flag">wxEXPAND|wxLEFT|wxRIGHT</property>
                                                         <property name="proportion">1</property>
-                                                        <object class="wxFlexGridSizer" expanded="0">
+                                                        <object class="wxFlexGridSizer" expanded="1">
                                                             <property name="cols">1</property>
                                                             <property name="flexible_direction">wxBOTH</property>
                                                             <property name="growablecols"></property>
@@ -12454,11 +12454,11 @@
                                                                     </object>
                                                                 </object>
                                                             </object>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag">wxBOTTOM|wxFIXED_MINSIZE|wxTOP</property>
                                                                 <property name="proportion">1</property>
-                                                                <object class="wxStaticBoxSizer" expanded="0">
+                                                                <object class="wxStaticBoxSizer" expanded="1">
                                                                     <property name="id">wxID_ANY</property>
                                                                     <property name="label">Transformers</property>
                                                                     <property name="minimum_size"></property>
@@ -12466,11 +12466,11 @@
                                                                     <property name="orient">wxVERTICAL</property>
                                                                     <property name="permission">none</property>
                                                                     <event name="OnUpdateUI"></event>
-                                                                    <object class="sizeritem" expanded="0">
+                                                                    <object class="sizeritem" expanded="1">
                                                                         <property name="border">5</property>
                                                                         <property name="flag">wxEXPAND</property>
                                                                         <property name="proportion">1</property>
-                                                                        <object class="wxGridSizer" expanded="0">
+                                                                        <object class="wxGridSizer" expanded="1">
                                                                             <property name="cols">1</property>
                                                                             <property name="hgap">0</property>
                                                                             <property name="minimum_size"></property>
@@ -13947,11 +13947,11 @@
                                                             </object>
                                                         </object>
                                                     </object>
-                                                    <object class="sizeritem" expanded="0">
+                                                    <object class="sizeritem" expanded="1">
                                                         <property name="border">5</property>
                                                         <property name="flag">wxEXPAND</property>
                                                         <property name="proportion">1</property>
-                                                        <object class="wxFlexGridSizer" expanded="0">
+                                                        <object class="wxFlexGridSizer" expanded="1">
                                                             <property name="cols">1</property>
                                                             <property name="flexible_direction">wxBOTH</property>
                                                             <property name="growablecols"></property>
@@ -13963,11 +13963,11 @@
                                                             <property name="permission">none</property>
                                                             <property name="rows">2</property>
                                                             <property name="vgap">0</property>
-                                                            <object class="sizeritem" expanded="0">
+                                                            <object class="sizeritem" expanded="1">
                                                                 <property name="border">5</property>
                                                                 <property name="flag">wxFIXED_MINSIZE</property>
                                                                 <property name="proportion">1</property>
-                                                                <object class="wxStaticBoxSizer" expanded="0">
+                                                                <object class="wxStaticBoxSizer" expanded="1">
                                                                     <property name="id">wxID_ANY</property>
                                                                     <property name="label">Transmission Cables</property>
                                                                     <property name="minimum_size"></property>
@@ -13975,11 +13975,11 @@
                                                                     <property name="orient">wxVERTICAL</property>
                                                                     <property name="permission">none</property>
                                                                     <event name="OnUpdateUI"></event>
-                                                                    <object class="sizeritem" expanded="0">
+                                                                    <object class="sizeritem" expanded="1">
                                                                         <property name="border">5</property>
                                                                         <property name="flag">wxEXPAND</property>
                                                                         <property name="proportion">1</property>
-                                                                        <object class="wxFlexGridSizer" expanded="0">
+                                                                        <object class="wxFlexGridSizer" expanded="1">
                                                                             <property name="cols">1</property>
                                                                             <property name="flexible_direction">wxBOTH</property>
                                                                             <property name="growablecols"></property>
@@ -15111,7 +15111,7 @@
                                                                                     </object>
                                                                                 </object>
                                                                             </object>
-                                                                            <object class="sizeritem" expanded="0">
+                                                                            <object class="sizeritem" expanded="1">
                                                                                 <property name="border">3</property>
                                                                                 <property name="flag">wxBOTTOM</property>
                                                                                 <property name="proportion">1</property>
@@ -15840,7 +15840,7 @@
                                 <event name="OnSetFocus"></event>
                                 <event name="OnSize"></event>
                                 <event name="OnUpdateUI"></event>
-                                <object class="wxFlexGridSizer" expanded="1">
+                                <object class="wxFlexGridSizer" expanded="0">
                                     <property name="cols">1</property>
                                     <property name="flexible_direction">wxBOTH</property>
                                     <property name="growablecols"></property>
@@ -15852,11 +15852,11 @@
                                     <property name="permission">none</property>
                                     <property name="rows">1</property>
                                     <property name="vgap">0</property>
-                                    <object class="sizeritem" expanded="1">
+                                    <object class="sizeritem" expanded="0">
                                         <property name="border">19</property>
                                         <property name="flag">wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxEXPAND|wxLEFT|wxTOP</property>
                                         <property name="proportion">0</property>
-                                        <object class="wxStaticBitmap" expanded="1">
+                                        <object class="wxStaticBitmap" expanded="0">
                                             <property name="BottomDockable">1</property>
                                             <property name="LeftDockable">1</property>
                                             <property name="RightDockable">1</property>
@@ -16014,7 +16014,7 @@
                                 <event name="OnSetFocus"></event>
                                 <event name="OnSize"></event>
                                 <event name="OnUpdateUI"></event>
-                                <object class="wxFlexGridSizer" expanded="1">
+                                <object class="wxFlexGridSizer" expanded="0">
                                     <property name="cols">2</property>
                                     <property name="flexible_direction">wxBOTH</property>
                                     <property name="growablecols"></property>
@@ -16026,11 +16026,11 @@
                                     <property name="permission">none</property>
                                     <property name="rows">0</property>
                                     <property name="vgap">0</property>
-                                    <object class="sizeritem" expanded="1">
+                                    <object class="sizeritem" expanded="0">
                                         <property name="border">5</property>
                                         <property name="flag">wxALL</property>
                                         <property name="proportion">0</property>
-                                        <object class="wxStaticText" expanded="1">
+                                        <object class="wxStaticText" expanded="0">
                                             <property name="BottomDockable">1</property>
                                             <property name="LeftDockable">1</property>
                                             <property name="RightDockable">1</property>
@@ -16112,7 +16112,7 @@
                                 </object>
                             </object>
                         </object>
-                        <object class="notebookpage" expanded="1">
+                        <object class="notebookpage" expanded="0">
                             <property name="bitmap"></property>
                             <property name="label">Help</property>
                             <property name="select">0</property>
@@ -16292,7 +16292,7 @@
                 </object>
             </object>
         </object>
-        <object class="Dialog" expanded="1">
+        <object class="Dialog" expanded="0">
             <property name="aui_managed">0</property>
             <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
             <property name="bg"></property>
@@ -16658,7 +16658,7 @@
                 </object>
             </object>
         </object>
-        <object class="Dialog" expanded="1">
+        <object class="Dialog" expanded="0">
             <property name="aui_managed">0</property>
             <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
             <property name="bg"></property>
@@ -16720,7 +16720,7 @@
             <event name="OnSetFocus"></event>
             <event name="OnSize"></event>
             <event name="OnUpdateUI"></event>
-            <object class="wxFlexGridSizer" expanded="1">
+            <object class="wxFlexGridSizer" expanded="0">
                 <property name="cols">1</property>
                 <property name="flexible_direction">wxBOTH</property>
                 <property name="growablecols"></property>
@@ -17024,7 +17024,7 @@
                 </object>
             </object>
         </object>
-        <object class="Dialog" expanded="1">
+        <object class="Dialog" expanded="0">
             <property name="aui_managed">0</property>
             <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
             <property name="bg"></property>
@@ -17086,7 +17086,7 @@
             <event name="OnSetFocus"></event>
             <event name="OnSize"></event>
             <event name="OnUpdateUI"></event>
-            <object class="wxFlexGridSizer" expanded="1">
+            <object class="wxFlexGridSizer" expanded="0">
                 <property name="cols">1</property>
                 <property name="flexible_direction">wxBOTH</property>
                 <property name="growablecols"></property>
@@ -17098,11 +17098,11 @@
                 <property name="permission">none</property>
                 <property name="rows">2</property>
                 <property name="vgap">0</property>
-                <object class="sizeritem" expanded="1">
+                <object class="sizeritem" expanded="0">
                     <property name="border">5</property>
                     <property name="flag">wxALIGN_CENTER|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxEXPAND</property>
                     <property name="proportion">1</property>
-                    <object class="wxFlexGridSizer" expanded="1">
+                    <object class="wxFlexGridSizer" expanded="0">
                         <property name="cols">1</property>
                         <property name="flexible_direction">wxBOTH</property>
                         <property name="growablecols"></property>
@@ -17114,11 +17114,11 @@
                         <property name="permission">none</property>
                         <property name="rows">2</property>
                         <property name="vgap">0</property>
-                        <object class="sizeritem" expanded="1">
+                        <object class="sizeritem" expanded="0">
                             <property name="border">5</property>
                             <property name="flag">wxALL</property>
                             <property name="proportion">0</property>
-                            <object class="wxStaticText" expanded="1">
+                            <object class="wxStaticText" expanded="0">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
@@ -17197,11 +17197,11 @@
                                 <event name="OnUpdateUI"></event>
                             </object>
                         </object>
-                        <object class="sizeritem" expanded="1">
+                        <object class="sizeritem" expanded="0">
                             <property name="border">5</property>
                             <property name="flag">wxEXPAND | wxALL</property>
                             <property name="proportion">1</property>
-                            <object class="wxRichTextCtrl" expanded="1">
+                            <object class="wxRichTextCtrl" expanded="0">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
@@ -17297,11 +17297,11 @@
                         </object>
                     </object>
                 </object>
-                <object class="sizeritem" expanded="1">
+                <object class="sizeritem" expanded="0">
                     <property name="border">3</property>
                     <property name="flag">wxALIGN_LEFT|wxALIGN_TOP|wxBOTTOM|wxEXPAND|wxTOP</property>
                     <property name="proportion">1</property>
-                    <object class="wxFlexGridSizer" expanded="1">
+                    <object class="wxFlexGridSizer" expanded="0">
                         <property name="cols">1</property>
                         <property name="flexible_direction">wxBOTH</property>
                         <property name="growablecols"></property>
@@ -17313,11 +17313,11 @@
                         <property name="permission">none</property>
                         <property name="rows">1</property>
                         <property name="vgap">0</property>
-                        <object class="sizeritem" expanded="1">
+                        <object class="sizeritem" expanded="0">
                             <property name="border">130</property>
                             <property name="flag">wxALIGN_CENTER|wxALIGN_CENTER_HORIZONTAL|wxLEFT</property>
                             <property name="proportion">0</property>
-                            <object class="wxButton" expanded="1">
+                            <object class="wxButton" expanded="0">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
