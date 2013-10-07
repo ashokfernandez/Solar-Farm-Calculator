@@ -269,6 +269,27 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.inputFields['circuitBreakerDepreciation'] = InputField(self.circuitBreakerDepreciation_input, self.circuitBreakerDepreciation_label, lowerLimit=0, upperLimit=100)
 
 
+
+		# ----- Save a reference to all the selector objects so we can quickly get their values
+		self.selectors = {}
+
+		# CURRENCIES
+		self.selectors['siteCurrency'] = self.siteCost_currency
+		self.selectors['financialCurrency'] = self.financialCurrency_currency
+		self.selectors['panelCurrency'] = self.panelCost_currency
+		self.selectors['circuitBreakerCurrency'] = self.circuitBreakerCost_currency
+		self.selectors['DCCableCurrency'] = self.DCCableCost_currency
+		self.selectors['inverterCurrency'] = self.inverterCost_currency
+		self.selectors['ACCableCurrency'] = self.ACCableCost_currency
+		self.selectors['transformerCurrency'] = self.transformerCost_currency
+		self.selectors['TXCableCurrency'] = self.TXCableCost_currency
+
+		# MATERIALS
+		self.selectors['DCCableMaterial'] = self.DCCableMaterial_input
+		self.selectors['ACCableMaterial'] = self.ACCableMaterial_input
+		self.selectors['TXCableMaterial'] = self.TXCableMaterial_input
+		
+
 	def evt_closeApp_clicked( self, event ):
 		''' Terminates the program when the red cross is clicked on the main window'''
 		# DO ANY CLEAN UP HERE
@@ -288,6 +309,26 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# if not validate_fields():
 		# DialogBox_IncompleteForm()
 
+	def evt_calculateOptimumAngle_checked( self, event ):
+		''' Enables and disables the panel angle box when the "Calculate Optimum Angle" checkbox is toggled '''
+		# Check if the checkbox is clicked or not to determine if the wxTextCtrl should be enabled
+		isEnabled = True
+		if event.IsChecked():
+			isEnabled = False
+
+		# Enable or disable the wxTextCtrl as appropriate
+		self.panelAngle_input.Enable(isEnabled)
+
+	
+	def evt_calculateTXCableLength_checked( self, event ):
+		''' Enables and disables the tx cable length text ctrl when the "Calculate Cable Length" checkbox is toggled '''
+		# Check if the checkbox is clicked or not to determine if the wxTextCtrl should be enabled
+		isEnabled = True
+		if event.IsChecked():
+			isEnabled = False
+
+		# Enable or disable the wxTextCtrl as appropriate
+		self.TXCableLength_input.Enable(isEnabled)
 
 		
 
