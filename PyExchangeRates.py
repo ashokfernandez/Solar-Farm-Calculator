@@ -59,6 +59,7 @@ GET_NAMES = 'currencies.json'                       # Add this to the Base URL f
 UNITED_STATES_DOLLARS_KEY = 'USD'                   # Currency key for United States Dollars
 DEBUG_MODE = False                                  # Set to False to turn off debugging messages
 
+
 # --------------------------------------------------------------------------------------------------------------------
 # MISC FUNCTIONS
 # --------------------------------------------------------------------------------------------------------------------
@@ -382,7 +383,7 @@ class Exchange(object):
 
         # Check the currency key is a string
         if not (isinstance(currencyKey, str)):
-            raise TypeError('Currency key must be of type str not %s' % type(amount))
+            raise TypeError('Currency key must be of type str not %s' % type(currencyKey))
 
         # Convert the key to uppercase
         currencyKey = currencyKey.upper()

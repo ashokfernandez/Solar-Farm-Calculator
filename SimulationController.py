@@ -1,132 +1,17 @@
 # import sys
 # from matplotlib.ticker import FuncFormatter
 # import matplotlib.pyplot as plt
+
+
 from SolarAssets import *
 from SolarSimulation import *
 
 import ReverseGeocode 
-import Countries
-import AverageTemperatureData
 
 import datetime
 
-startDate = datetime.date(2013, 1, 1)
-endDate = datetime.date(2015, 1, 1)
 
 
-
-def CreateSimulation(inputParameters, optionalInputParameters):
-	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation '''
-
-	# ---------------------- GEO CODING ---------------------------
-
-	# Get the site information from the Reverse Geocode
-	code = ReverseGeocode.get_country_code(inputParameters['siteLatitude'], inputParameters['siteLongitude'])
-
-	# Throw an exception if the GeoCode Fails
-	if code == False:
-		raise ReverseGeocode.CountryNotFound("Country Not Found at Given Lat, Long")
-
-
-	# ------------------ LOAD DATA FROM FILES ----------------------
-	
-	# Load the temperature data
-	temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
-	
-
-
-	# ------------- CALCULATE OPTIONAL PARAMETERS ------------------
-
-	# If the user specified for the transmission line length to be calculated, then calculate it
-	if optionalInputParameters['TXCableLength'] == None:
-		TXCableLength = calcLength(inputParameters['siteLatitude'], inputParameters['siteLongitude'], 
-								   inputParameters['siteGridLatitude'], inputParameters['siteGridLongitude'])
-	else:
-		TXCableLength = optionalInputParameters['TXCableLength']
-
-
-	# --------------- CREATE SIMULATION OBJECTS ---------------------
-	
-	# Constants
-	MATERIALS = {}
-	MATERIALS['Copper'] = Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
-	MATERIALS['Aluminium'] = Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
-
-	# Instantiate the panel object
-	panel = PVPanel(voltage=inputParameters['panelVoltage'], 
-		 			efficiency=inputParameters['panelAngle'] , 
-		 			degradationRate=inputParameters['panelDegradation'], 
-		 			area=inputParameters['panelArea'], 
-		 			cost=inputParameters['panelCost'], 
-		 			currency=inputParameters['panelCurrency'])
-
-	module = PVModule(panelType=panel, 
-		 			  panelNum=inputParameters['siteNumPanels'])
-	
-	array = PVArray(moduleType=module, 
-					moduleNum=inputParameters['siteNumModules'], 
-					arrayAngle=inputParameters['panelAngle'])
-
-	
-
-	dcCable = DCCable(diameter=inputParameters['DCCableDiameter'], 
-					  material=MATERIALS[inputParameters['DCCableMaterial']], 
-					  length=inputParameters['DCCableLength'], 
-					  costPerMeter=inputParameters['DCCableCost'], 
-					  depRate=inputParameters['DCCableDepreciation'])	
-
-	ac1Cable = AC1Cable(strandNum=inputParameters['ACCableNumStrands'], 
-						diameter=inputParameters['ACCableDiameter'], 
-						material=MATERIALS[inputParameters['ACCableMaterial']], 
-						length=inputParameters['ACCableLength'], 
-						costPerMeter=inputParameters['ACCableCost'], 
-						depRate=inputParameters['ACCableDepreciation'])
-
-	ac2Cable = AC2Cable(strandNum=inputParameters['TXCableNumStrands'], 
-						diameter=inputParameters['TXCableDiameter'], 
-						material=MATERIALS[inputParameters['TXCableMaterial']], 
-						length=TXCableLength, 
-						costPerMeter=inputParameters['TXCableCost'], 
-						depRate=inputParameters['TXCableDepreciation'])
-
-	inverter = Inverter(powerFactor=inputParameters['inverterPowerFactor'], 
-						efficiency=inputParameters['inverterEfficiency'], 
-						voltage=inputParameters['inverterOutputVoltage'], 
-						cost=inputParameters['inverterCost'] , 
-						depRate=inputParameters['inverterDepreciation'])
-	
-	transformer = Transformer(voltage=inputParameters['transformerOutputVoltage'], 
-							  efficiency=inputParameters['transformerEfficiency'] , 
-							  VARating=inputParameters['transformerRating'] , 
-							  cost=inputParameters['transformerCost'] , 
-							  depRate=inputParameters['transformerDepreciation'])
-
-	circuitBreaker = CircuitBreaker(cost=inputParameters['circuitBreakerCost'])
-
-	site = Site(transformerNum=inputParameters['siteNumTransformers'], 
-				arrayNum=inputParameters['siteNumArrays'], 
-				latitude=inputParameters['siteLatitude'], 
-				longitude=inputParameters['siteLongitude'],
-		  		circuitBreakerNum=inputParameters['siteNumCircuitBreakers'], 
-		  		inverterNum=inputParameters['siteNumInverters'], 
-		  		temperature=temperature, 
-		  		landPrice=inputParameters['siteCost'],
-		  		landCurrency=inputParameters['siteCurrency'],
-				landAppRate=inputParameters['siteAppreciation'])
-
-	financial = Financial(maintenance=inputParameters['financialMaintenance'], 
-						  miscExpenses=inputParameters['financialMiscExpenses'], 
-						  interestRate =inputParameters['financialInterestRate'],
-						  powerPrice = inputParameters['financialPowerPrice'], 
-						  baseCurrency=inputParameters['financialBaseCurrency'])
-
-	simulation = Simulation(start=startDate, finish=endDate, PVPanel=panel, PVModule=module, PVArray=array, 
-		                   DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
-		                   AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
-	                       numThreads=50, simulationTimestepMins=60)
-
-
-	return simulation
 
 
 
