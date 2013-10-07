@@ -11,7 +11,7 @@ import ReverseGeocode
 import Countries
 import AverageTemperatureData
 
-
+import numpy
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 import datetime
@@ -90,6 +90,7 @@ POWER_RESULTS = None
 def showResults():
 	global POWER_RESULTS
 	global FINANCIAL_RESULTS
+
 	# Plot the results
 	formatter = FuncFormatter(FinancialFormatter)
 
@@ -99,33 +100,92 @@ def showResults():
 	plt.title('Average Power of the PV farm')
 	plt.ylabel('Power (kW)')
 
-	plt.subplot(312)
-	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['sunnyTime'], 'g')
-	plt.title('Electrical energy of the PV farm at GEP')
-	plt.ylabel('Energy (kWh)')
-
-	plt.subplot(313)
-	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['totalEffciency'], 'r')
-	plt.title('Total efficiency of the PV farm')
-	plt.ylabel('Efficiency (%)')
-
-	plt.figure(2)
-	a = plt.subplot(311)
-	a.yaxis.set_major_formatter(formatter)
-	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'])
-	plt.title('Net Asset Value')
+	# plt.subplot(212)
+	# plt.plot(POWER_RESULTS['days'], POWER_RESULTS['sunnyTime'], 'g')
+	# plt.title('Electrical energy of the PV farm at GEP')
+	# plt.ylabel('Energy (kWh)')
 
 	a = plt.subplot(312)
 	a.yaxis.set_major_formatter(formatter)
-	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
-	plt.title('Loan Value')
+	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'], 'b', 
+		     FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
+	plt.title('Net Asset Value and Loan Value')
+	plt.ylabel('(%s)' % FINANCIAL_RESULTS['baseCurrency'])
+
 
 	a = plt.subplot(313)
 	a.yaxis.set_major_formatter(formatter)
 	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
-	plt.title('Accumlative Revenue')
+	plt.title('Accumlated Revenue')
+	plt.ylabel('(%s)' % FINANCIAL_RESULTS['baseCurrency'])
+	# plt.figure(2)
+	# a = plt.subplot(311)
+	# a.yaxis.set_major_formatter(formatter)
+	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'])
+	# plt.title('Net Asset Value')
+
+	# a = plt.subplot(312)
+	# a.yaxis.set_major_formatter(formatter)
+	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
+	# plt.title('Loan Value')
+
+	# a = plt.subplot(313)
+	# a.yaxis.set_major_formatter(formatter)
+	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
+	# plt.title('Accumlative Revenue')
 	
+	# Output the peak currents in each conductor
+	resultsText =   "--------------------------------------------\n"
+	resultsText +=  "------------ POWER FLOW RESULTS ------------\n"
+	resultsText +=  "--------------------------------------------\n\n"
+	resultsText +=  "PEAK CURRENTS IN CONDUCTORS ----------------\n"
+	resultsText +=  "Peak Current in DC Cable : \n    %.2f A\n" % POWER_RESULTS['peakDC']
+	resultsText +=  "Peak Current in AC Cable : \n    %.2f A\n" % POWER_RESULTS['peakAC1']
+	resultsText +=  "Peak Current in Transmission Cable : \n    %.2f A\n\n" % POWER_RESULTS['peakAC2']
+
+	# Get the maximum average power output
+	maxPower = max(POWER_RESULTS['averagePower'])
+	minPower = min(POWER_RESULTS['averagePower'])
+	resultsText += "AVERAGE DAILY POWER -------------------------\n"
+	resultsText += "Maximum : \n    %.2f kW\n" % maxPower
+	resultsText += "Minimum : \n    %.2f kW\n\n" % minPower
+
+	# Accumulate the energy
+	totalEnergy = sum(POWER_RESULTS['electricalEnergy']) / 1000.0
+	averageEnergy = numpy.array(POWER_RESULTS['electricalEnergy'])
+	averageEnergy = numpy.mean(averageEnergy) / 1000.0
+
+	resultsText += "ENERGY EXPORTED TO GRID ---------------------\n"
+	resultsText += "Accumulated Total : \n    %.2f kWh\n" % totalEnergy
+	resultsText += "Daily Average : \n    %.2f kWh\n\n" % averageEnergy
+
+
+	# Averate the effciencies
+	electricalEfficiency = numpy.array(POWER_RESULTS['electricalEffciency'])
+	totalEfficiency = numpy.array(POWER_RESULTS['totalEffciency'])
+
+	electricalEfficiency = numpy.mean(electricalEfficiency)
+	totalEfficiency = numpy.mean(totalEfficiency)
+
+	resultsText += "EFFICIENCIES -------------------------------\n"
+	resultsText += "Total efficiency (Sunlight energy to electricity) : \n    %.2f%% \n" % totalEfficiency
+	resultsText += "Electrical efficiency (Panels output to grid connection) : \n    %.2f%% \n\n\n\n" % electricalEfficiency
+
+
+	
+	# Financial Results
+	resultsText +=  "--------------------------------------------\n"
+	resultsText +=  "----------- FINANCIAL INFORMATION ----------\n"
+	resultsText +=  "--------------------------------------------\n\n"
+
+	resultsText += "Initial Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['loanValue'][0], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total Revenue : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['accumulativeRevenue'][-1], FINANCIAL_RESULTS['baseCurrency'])
+
+
+	resultsBox = DialogBox_SimulationResults(resultsText)
+
 	plt.show()
+
 
 def CreateSimulation(inputParameters, optionalInputParameters):
 	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation '''
@@ -313,6 +373,19 @@ class DialogBox_DateError(SolarFarmGUI.DateError):
 		self.EndModal(1)
 
 
+# Implement the functionality of the 'Fatal Error' message dialog
+class DialogBox_SimulationResults(SolarFarmGUI.SimulationResults):
+	def __init__( self , simulationResults):
+		''' Creates the "Fatal Error" dialog box and uses the given string as the error message.
+		the program will quit when the dialog is dismissed'''
+		SolarFarmGUI.SimulationResults.__init__(self, None)
+		self.simulationResultsLabel.AppendText(simulationResults)
+		self.Show()
+
+	def evt_dialogOK_clicked( self, event ):
+		''' Closes the window when the OK button is pressed'''
+		self.Destroy()
+
 
 # Class to show a progress dialog when the simulation is running
 class DialogBox_ProgressDialog(object):
@@ -345,7 +418,7 @@ class DialogBox_ProgressDialog(object):
 
  	def closeDialog(self):
  		''' Closes the dialog box'''
-		# self.progressBox.Destroy()
+		self.progressBox.Destroy()
 		self.progressBox.EndModal(1)
 
 
@@ -701,7 +774,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		endDate = datepicker_to_datetime(self.simulationEnd_input)
 
 		# If the dates are invalid throw an exception
-		if (endDate - startDate).days < 0:
+		if (endDate - startDate).days <= 0:
 			DialogBox_DateError()
 			return None
 
@@ -763,7 +836,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 			progressDialog.closeDialog()
 			
 			# self.showResults(powerResults, financialResults)
-			wx.CallLater(350, showResults)
+			wx.CallLater(100, showResults)
 
 			return None
 

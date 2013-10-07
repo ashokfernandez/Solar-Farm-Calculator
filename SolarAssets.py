@@ -431,6 +431,10 @@ class Financial(object):
         ''' Returns the value of a money object in the base currency of the loan'''
         return money.convert(self.baseCurrency).getAmount()
 
+    def getBaseCurrency(self):
+        ''' Returns the three letter code of the base currency'''
+        return self.baseCurrency
+
     def getPowerPrice(self):
         ''' Return the selling rate of power '''
         return self.powerPrice

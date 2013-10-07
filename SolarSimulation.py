@@ -226,6 +226,12 @@ class thread_SimulateDay(threading.Thread):
             sunnyTimeSteps = 0
             powerRunVal = 0
 
+            # Arrays to contain the current values so we can obtain the maximum
+            DCCurrents = []
+            AC1Currents = []
+            AC2Currents = []
+
+
 # --------------------------------------------------------------------------------------------------
 #---------- Tilted irradiance calculation
 # --------------------------------------------------------------------------------------------------
@@ -311,6 +317,11 @@ class thread_SimulateDay(threading.Thread):
                     energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
                     powerRunVal += AC2Output
 
+                    # Save the DC, AC1, and AC2 currents
+                    DCCurrents.append(DCcurrent)
+                    AC1Currents.append(IAC1)
+                    AC2Currents.append(IAC2)
+
 # --------------------------------------------------------------------------------------------------
 #---------- RESULTS
 # --------------------------------------------------------------------------------------------------
@@ -320,18 +331,21 @@ class thread_SimulateDay(threading.Thread):
             totalEffciency /= sunnyTimeSteps
             elecEff /= sunnyTime
             powerRunVal /= sunnyTime
-            
+
+            # Find the maximum currents
+            maxDC = max(DCCurrents)
+            maxAC1 = max(AC1Currents)
+            maxAC2 = max(AC2Currents)
+
             # Save the output data to the SimulationDay object
             simDay.averagePower = powerRunVal
             simDay.electricalEffciency = elecEff
             simDay.totalEffciency = totalEffciency
             simDay.electricalEnergy = energyOutput
             simDay.sunnyTime = a
-
-            # TODO: Calculate peak currents for the day and output from the thread.
-            simDay.peakCurrent_DC = DCcurrent
-            simDay.peakCurrent_AC1 = IAC1
-            simDay.peakCurrent_AC2 = IAC2
+            simDay.peakCurrent_DC = maxDC
+            simDay.peakCurrent_AC1 = maxAC1
+            simDay.peakCurrent_AC2 = maxAC2
 
             # Push the completed simulation day to the output queue and tick it off the input queue
             self.outputQueue.put(simDay)
@@ -491,6 +505,9 @@ class Simulation(object):
         electricalEffciency = []
         averagePower = []
         sunnyTime = []
+        peakDC = []
+        peakAC1 = []
+        peakAC2 = []
 
         for day in resultDays:
             days.append(day.date)
@@ -499,6 +516,14 @@ class Simulation(object):
             totalEffciency.append(day.totalEffciency)
             averagePower.append(day.averagePower / 1000) # Converts power to kW
             sunnyTime.append(day.sunnyTime)
+            peakDC.append(day.peakCurrent_DC)
+            peakAC1.append(day.peakCurrent_AC1)
+            peakAC2.append(day.peakCurrent_AC2)
+
+        # Find the maximum currents
+        peakDC = max(peakDC)
+        peakAC1 = max(peakAC1)
+        peakAC2 = max(peakAC2)
 
         self.powerResults = {
             'days' : self.days,
@@ -506,7 +531,10 @@ class Simulation(object):
             'electricalEffciency' : electricalEffciency,
             'totalEffciency' : totalEffciency,
             'averagePower' : averagePower,
-            'sunnyTime' : sunnyTime
+            'sunnyTime' : sunnyTime,
+            'peakDC' : peakDC,
+            'peakAC1' : peakAC1,
+            'peakAC2': peakAC2          
         }
 
         return self.powerResults
@@ -590,6 +618,7 @@ class Simulation(object):
             'netAssetValue' : netAssetValue,
             'loanValue' : loanValue,
             'accumulativeRevenue' : accumulativeRevenue,
+            'baseCurrency' : self.parameters['Financial'].getBaseCurrency()
         }
 
     def getFinancialResults(self):
