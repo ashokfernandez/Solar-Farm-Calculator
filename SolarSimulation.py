@@ -593,7 +593,7 @@ class Simulation(object):
             # accumulativeExpenses.append(initialExpenses + expensesAccumulator)
             
             # Calculate the value of the power sold for this day
-            dailyRevenue = (electricalEnergy[i] / 1000.0) * self.parameters['Financial'].getPowerPrice()  # Convert to watt hours
+            dailyRevenue = (electricalEnergy[i]) * self.parameters['Financial'].getPowerPrice()  # Convert to watt hours
             revenueAccumulator += dailyRevenue
             accumulativeRevenue.append(revenueAccumulator)
 

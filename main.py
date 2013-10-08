@@ -94,7 +94,7 @@ def showResults():
 	# Plot the results
 	formatter = FuncFormatter(FinancialFormatter)
 
-	plt.figure(1)
+	plt.figure(1, figsize=(14, 11))
 	plt.subplot(311)
 	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'])
 	plt.title('Average Power of the PV farm')
@@ -107,10 +107,11 @@ def showResults():
 
 	a = plt.subplot(312)
 	a.yaxis.set_major_formatter(formatter)
-	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'], 'b', 
-		     FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
+	p1, = plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'], 'b') 
+	p2, = plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
 	plt.title('Net Asset Value and Loan Value')
 	plt.ylabel('(%s)' % FINANCIAL_RESULTS['baseCurrency'])
+	plt.legend([p1, p2], ["Net Asset Value", "Loan Value"], loc=7)
 
 
 	a = plt.subplot(313)
@@ -156,8 +157,8 @@ def showResults():
 	averageEnergy = numpy.mean(averageEnergy) / 1000.0
 
 	resultsText += "ENERGY EXPORTED TO GRID ---------------------\n"
-	resultsText += "Accumulated Total : \n    %.2f kWh\n" % totalEnergy
-	resultsText += "Daily Average : \n    %.2f kWh\n\n" % averageEnergy
+	resultsText += "Accumulated Total : \n    %.2f MWh\n" % totalEnergy
+	resultsText += "Daily Average : \n    %.2f MWh\n\n" % averageEnergy
 
 
 	# Averate the effciencies
@@ -666,26 +667,26 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		# SITE VARIABLES
 		self.inputFields['siteCost'].setFieldValue('10000000')
 		self.inputFields['siteAppreciation'].setFieldValue('1.03')
-		self.inputFields['siteLatitude'].setFieldValue('-43.521886')
-		self.inputFields['siteLongitude'].setFieldValue('172.583864')
-		self.inputFields['siteGridLatitude'].setFieldValue('-43.521543')
-		self.inputFields['siteGridLongitude'].setFieldValue('172.571075')
+		self.inputFields['siteLatitude'].setFieldValue('-21.0928')
+		self.inputFields['siteLongitude'].setFieldValue('-175.1050')
+		self.inputFields['siteGridLatitude'].setFieldValue('-21.0910')
+		self.inputFields['siteGridLongitude'].setFieldValue('-175.1102')
 		self.inputFields['siteNumPanels'].setFieldValue('30')
 		self.inputFields['siteNumModules'].setFieldValue('7')
 		self.inputFields['siteNumArrays'].setFieldValue('30')
-		self.inputFields['siteNumTransformers'].setFieldValue('3')
-		self.inputFields['siteNumInverters'].setFieldValue('10')
+		self.inputFields['siteNumTransformers'].setFieldValue('1')
+		self.inputFields['siteNumInverters'].setFieldValue('2')
 		self.inputFields['siteNumCircuitBreakers'].setFieldValue('15')
 
 		# FINANCIAL VARIABLES
 		self.inputFields['financialInterestRate'].setFieldValue('6')
 		self.inputFields['financialMiscExpenses'].setFieldValue('100000')
 		self.inputFields['financialMaintenance'].setFieldValue('25000')
-		self.inputFields['financialPowerPrice'].setFieldValue('0.20')
+		self.inputFields['financialPowerPrice'].setFieldValue('0.25')
 
 		# PANEL VARIABLES
 		self.inputFields['panelVoltage'].setFieldValue('30.5')
-		self.inputFields['panelAngle'].setFieldValue('45')
+		self.inputFields['panelAngle'].setFieldValue('21')
 		self.inputFields['panelRating'].setFieldValue('230')
 		self.inputFields['panelDegradation'].setFieldValue('0.4')
 		self.inputFields['panelArea'].setFieldValue('1.63')
@@ -699,10 +700,10 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.inputFields['DCCableDepreciation'].setFieldValue('6')
 
 		# INVERTER VARIABLES
-		self.inputFields['inverterPowerFactor'].setFieldValue('0.95')
+		self.inputFields['inverterPowerFactor'].setFieldValue('1.00')
 		self.inputFields['inverterEfficiency'].setFieldValue('95')
 		self.inputFields['inverterOutputVoltage'].setFieldValue('400')
-		self.inputFields['inverterCost'].setFieldValue('1000')
+		self.inputFields['inverterCost'].setFieldValue('10000')
 		self.inputFields['inverterDepreciation'].setFieldValue('6')
 
 		# AC CABLE VARIABLES
@@ -714,9 +715,9 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 		# TRANSFORMER VARIABLES
 		self.inputFields['transformerOutputVoltage'].setFieldValue('11e3')
-		self.inputFields['transformerEfficiency'].setFieldValue('98')
+		self.inputFields['transformerEfficiency'].setFieldValue('98.9')
 		self.inputFields['transformerRating'].setFieldValue('1')
-		self.inputFields['transformerCost'].setFieldValue('1000')
+		self.inputFields['transformerCost'].setFieldValue('10000')
 		self.inputFields['transformerDepreciation'].setFieldValue('6')
 
 		# TX CABLE VARIABLES
@@ -727,7 +728,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 		self.inputFields['TXCableDepreciation'].setFieldValue('6')
 
 		# CIRCUIT BREAKERS
-		self.inputFields['circuitBreakerCost'].setFieldValue('1000')
+		self.inputFields['circuitBreakerCost'].setFieldValue('4000')
 		self.inputFields['circuitBreakerDepreciation'].setFieldValue('6')
 
 

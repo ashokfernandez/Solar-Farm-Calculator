@@ -1,4 +1,4 @@
-# PySolarSimulation
+# Solar Farm Calculator
 ### A software tool to model a generic solar photovoltaic farm.
 
 
