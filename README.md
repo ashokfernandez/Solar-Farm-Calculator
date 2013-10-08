@@ -22,7 +22,7 @@ will then run the model simulation.
 The outputs from the simulation can be listed and plotted for the user to
 determine if the parameters produce a viable solar farm.
 
-## How to run
+## How to run:
 In it's current state, the calculator should run on any operating system that supports python and the dependant packges.
 
 ### Install Dependancies
@@ -38,3 +38,12 @@ Special thanks goes out to the above projects for providing such great tools!
 An API key is required from [OpenExchangeRates.org](https://openexchangerates.org/signup/free). The free API key will suffice
 for this project as there is a limit to how often the software will hit the API for new data. When you have gotten an API key 
 place it at the top of Assets.py to ensure the exchange rates are retreieved.
+
+## Build the Documentation:
+The code has been heavily documented, this can be compiled into a PDF using [doxygen](http://www.stack.nl/~dimitri/doxygen/) and [latex](http://www.latex-project.org/). To build the documentation install doxygen and latex then open a shell in the Docs directory and type
+
+    doxygen
+    cd latex/
+    make
+
+A documentation file 'refman.pdf' will be avaliable in the latex folder which outlines in detail the different classes in the code and how they function
