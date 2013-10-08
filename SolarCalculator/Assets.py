@@ -1,26 +1,39 @@
-# --------------------------------------------------------------------------------------------------
-# SolarAssets : Solar farm Assets
-# --------------------------------------------------------------------------------------------------
-# Author: Darren O'Neill
-# Author: Jarrad Raumati 
-# Author: Ashok Fernandez
-# Date: 20/09/2013
-#
-# This module contains the asset classes for use with SolarSimulation
-# --------------------------------------------------------------------------------------------------
+'''@package Assets.py
 
+This module contains the asset classes that model the different components of the solar farm. Each asset derives
+itself from the Asset superclass which contains all the methods for calculating financial information relating to
+the assets. As far as the power flow simulations are concerned the assets are a way of encapsulating relevant data
+for different solar farm components to make it easy to interchange system components and parameters without having
+to dig through lots of single variables.
 
+Author: Ashok Fernandez
+Author: Darren O'Neill
+Author: Jarrad Raumati 
+Date: 20/09/2013
+'''
+
+# Import the currency exchange module
 import SolarCalculator.Utils.PyExchangeRates
 
-# Create a currency exchange
+# Create a global currency exchange for all the assets to share. This stops the currency API from being hit too many times.
 CURRENCY_EXCHANGE = SolarCalculator.Utils.PyExchangeRates.Exchange('843ce8fdc22c47779fb3040c2ba9a586')
+
+
 
 # --------------------------------------------------------------------------------------------------
 # ASSET SUPERCLASS
 # --------------------------------------------------------------------------------------------------
+
 class Asset(object):
-    ''' Asset superclass for PV farm components. Contains the financial data relating to the
-        asset. '''
+    ''' Asset superclass for PV farm components. 
+
+    Contains the financial data relating to assets. An asset is a physical thing which has a financial worth.
+    This financial worth decreases over time as the physical item gets older and loses value. This class is able
+    to calculate the depreciated worth of an Asset given a timedelta object of how old the asset is. All financial
+    calculations are done using the currency exchange module (PyExchangeRates) so the asset's require a currency
+    when their price is specified'''
+
+    global CURRENCY_EXCHANGE
     exchange = CURRENCY_EXCHANGE
 
     def __init__(self, cost, currency, depRate = 0):
@@ -32,27 +45,29 @@ class Asset(object):
         ''' Return the cost of the asset. '''
         return self.cost
 
-    def getDepreciatedValue(self, timedelta):
-        ''' Returns the assets value factoring in depreciation over the given time. '''
-        # converts depreciation rate to per day and timedelta has to be num days
-        return self.cost*(1-self.depRate/(365*100))**timedelta
+    def getDepreciatedValue(self, daysOld):
+        ''' Returns the asset's value factoring in depreciation for the given amount of days'''
+        return self.cost * (1-self.depRate/(365*100))**daysOld
 
     def getDepRate(self):
-        ''' Return the asset depreciation rate of the asset. '''
+        ''' Return the asset's depreciation rate of the asset. '''
         return self.depRate
 
     def getCurrency(self):
         ''' Return the currency of the asset's cost. '''
         return self.cost.getCurrencyKey()
 
+
+
 # --------------------------------------------------------------------------------------------------
 # SOLAR PANELS
 # --------------------------------------------------------------------------------------------------
+
 class PVPanel(Asset):
     ''' Class to store information relating to a solar PV panel. '''
     def __init__(self, voltage, rating, degradationRate, area, cost, currency = 'USD',
             depRate = 0):
-        ''' Initialise a PV panel object. '''
+        ''' Initialises a PV panel object.'''
         self.voltage = voltage                  # Panel rated voltage (V)
         self.degradationRate = degradationRate  # Panel asset degradation rate (%)
         self.area = area                        # Panel surface area (m^2)
@@ -81,11 +96,16 @@ class PVPanel(Asset):
         ''' Return the rating of the panel in watts. '''
         return self.rating
 
+
+
 # --------------------------------------------------------------------------------------------------
 # SOLAR MODULE
 # --------------------------------------------------------------------------------------------------
+
 class PVModule(Asset):
-    ''' Class to store information relating to a solar PV module. A module contains PV panels. '''
+    ''' Class to store information relating to a solar PV module. 
+
+    A module contains panelNum amount of panelType PV panel objects '''
     def __init__(self, panelType, panelNum):
         ''' Initialise a PV module object. '''
         self.panelType = panelType      # Type of panel within the module
@@ -117,11 +137,16 @@ class PVModule(Asset):
         ''' Return the number of panels within a module '''
         return self.panelNum
 
+
+
 # --------------------------------------------------------------------------------------------------
 # SOLAR ARRAY
 # --------------------------------------------------------------------------------------------------
+
 class PVArray(Asset):
-    ''' Class to store the information relating to a PV array. An array contains PV modules. '''
+    ''' Class to store the information relating to a PV array. 
+
+    An array contains moduleNum amount of moduleType PV modules objects'''
     def __init__(self, moduleType, moduleNum, arrayAngle):
         ''' Initialise a PV array object. '''
         self.moduleType = moduleType    # Type of module within the array
@@ -158,11 +183,17 @@ class PVArray(Asset):
         ''' Calculates the total area of the panels in m^2. '''
         return self.moduleType.getArea() * self.moduleNum
 
+
+
 # --------------------------------------------------------------------------------------------------
 # MATERIAL
 # --------------------------------------------------------------------------------------------------
+
 class Material(object):
-    ''' Class object for a material. '''
+    ''' Represents a cable material. 
+
+    Holds all the information relating to a cable material including its resistivity and temperature coefficient'''
+
     def __init__(self, name, resistivity, tempCoefficient):
         ''' Initialise a material object. '''
         self.name = name
@@ -177,9 +208,12 @@ class Material(object):
         ''' Return the temperature coefficient of the material. '''
         return self.tempCoefficient
 
+
+
 # --------------------------------------------------------------------------------------------------
 # DC CABLE
 # --------------------------------------------------------------------------------------------------
+
 class DCCable(Asset):
     ''' Class to store the information relating to the DC cable between the PV array and the
         inverter. '''
@@ -204,9 +238,12 @@ class DCCable(Asset):
         ''' Return the length of the cable. '''
         return self.length
 
+
+
 # --------------------------------------------------------------------------------------------------
 # INVERTER
 # --------------------------------------------------------------------------------------------------
+
 class Inverter(Asset):
     ''' Class to store the information relating to the Inverter. '''
     def __init__(self, powerFactor, efficiency, voltage, cost, currency = 'USD', depRate = 0):
@@ -230,9 +267,12 @@ class Inverter(Asset):
         ''' Return the output voltage of the inverter. '''
         return self.voltage
 
+
+
 # --------------------------------------------------------------------------------------------------
 # Inv-Tx Lines (AC1 Cables)
 # --------------------------------------------------------------------------------------------------
+
 class AC1Cable(Asset):
     ''' Class that stores the information relating to the AC cable
     between the inverter and the transformer. '''
@@ -263,9 +303,12 @@ class AC1Cable(Asset):
         ''' Return the length of the cable. '''
         return self.length
 
+
+
 # --------------------------------------------------------------------------------------------------
 # TRANSFORMER
 # --------------------------------------------------------------------------------------------------
+
 class Transformer(Asset):
     ''' Class that stores the information relating to a transformer. '''
     def __init__(self, voltage, efficiency, VARating, cost, currency = 'USD', depRate = 0):
@@ -293,9 +336,12 @@ class Transformer(Asset):
         ''' Return the scrap value of the cable '''
         return self.scrapValue
 
+
+
 # --------------------------------------------------------------------------------------------------
 # AC2 LINES (TX Line)
 # --------------------------------------------------------------------------------------------------
+
 class AC2Cable(Asset):
     ''' Class that stores the information relating the transmission line between the solar farm and
     the grid entry point '''
@@ -326,18 +372,24 @@ class AC2Cable(Asset):
         ''' Return the length of the strand '''
         return self.length
 
+
+
 # --------------------------------------------------------------------------------------------------
 # CIRCUIT BREAKER
 # --------------------------------------------------------------------------------------------------
+
 class CircuitBreaker(Asset):
     ''' Class for storing information relating to a  circuit breaker '''
     def __init__(self, cost, currency = 'USD', depRate = 0):
         ''' Initialise the circuit breaker class object '''
         super(CircuitBreaker, self).__init__(cost, currency, depRate)
 
+
+
 # --------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
 # --------------------------------------------------------------------------------------------------
+
 class Site(Asset):
     ''' Class that stores the information relating to the solar farm site '''
     def __init__(self, transformerNum, arrayNum, circuitBreakerNum, inverterNum, 
@@ -387,6 +439,7 @@ class Site(Asset):
         return self.temperature[month - 1]
 
 
+
 # --------------------------------------------------------------------------------------------------
 # SITE PARAMETERS
 # --------------------------------------------------------------------------------------------------
@@ -401,6 +454,7 @@ class Financial(object):
         the cost of all the assets, plus miscalleneous expense - this is used to represent all the other
         costs associated with setting up a project such as construction costs, labour and legal fees etc.
     '''
+    global CURRENCY_EXCHANGE
     exchange = CURRENCY_EXCHANGE
 
     def __init__(self, maintenance, miscExpenses, interestRate, powerPrice, baseCurrency='USD'):
@@ -461,3 +515,8 @@ class Financial(object):
     def getPowerPrice(self):
         ''' Return the selling rate of power '''
         return self.powerPrice
+
+    def getCurrencyExchange(self):
+        ''' Returns a reference to the PyExchangeRates currency exchange object used for 
+        currency calculations on assets'''
+        return CURRENCY_EXCHANGE

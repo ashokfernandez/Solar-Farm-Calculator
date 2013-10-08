@@ -1,26 +1,29 @@
-# --------------------------------------------------------------------------------------------------
-# SolarSimulation : Solar farm model simulator
-# --------------------------------------------------------------------------------------------------
-# Author: Darren O'Neill
-# Author: Jarrad Raumati 
-# Author: Ashok Fernandez
-# Date: 20/09/2013
-#
-# This script simulates a solar farm to obtain the effeciency of a given
-# location
-# --------------------------------------------------------------------------------------------------
+'''@package Simulation.py
 
+Contains the core model and simulation code for the calculator. The thread class is where all the power simulations are done, and the
+runFinancial method contains all the financial simulation code. Takes a set of Asset objects from Asset.py which specifies the parameters
+of the simulation, as well as a start and finish date.
+
+Author: Ashok Fernandez
+Author: Darren O'Neill
+Author: Jarrad Raumati 
+Date: 20/09/2013
+'''
+
+# Import system modules
 import operator
-import Pysolar
 import Queue
 import threading
 import math
-
 import datetime
-# import SolarCalculator.Utils.PyExchangeRates
+
+# Import PySolar for irradiance calculations
+import Pysolar
 
 
-
+# --------------------------------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# --------------------------------------------------------------------------------------------------
 
 def calcLength(lat1, lng1, lat2, lng2):
     ''' Calculates the distance between two latitude and longtitude points in meters. '''
@@ -54,27 +57,11 @@ def calcCableResistance(cable, temperature):
 
     return resistance
 
-# --------------------------------------------------------------------------------------------------
-# MISC FINANCIAL----------------
-# --------------------------------------------------------------------------------------------------
-
-# Deprecated variables
-# maintainceBudget = 100000 # Maintaince budget per year
-# labourCosts = 500000      # Intial labour costs to build site
-# miscCapitalCosts = 500000 # Misc initial capital costs
-# miscDepRate = 8           # Misc depreciation rate (# per year)
-# buyBackRate = 0.25        # Selling rate of power ($/kWh)
-
-
 
 # --------------------------------------------------------------------------------------------------
-# SIMULATION DETAILS
+# SIMULATION THREAD
 # --------------------------------------------------------------------------------------------------
 
-# if findPayBack == 0:
-#     simLength = 365 * (endYear - startYear - 1) + (365 - beginDay) + months[endMonth]+ endDay
-# else:
-#     simLength = 50 * 365
 class thread_SimulateDay(threading.Thread):
     def __init__(self, inputQueue, outputQueue, timestep_mins):
         ''' Takes an input of SimulationDay objects, runs the simulation for that day and stores
@@ -85,12 +72,20 @@ class thread_SimulateDay(threading.Thread):
         self.outputQueue = outputQueue
     
     def run(self):
+        '''' Method thats invoked to run the thread.
+
+        The thread will keep running until the input queue is empty, at which point it will terminate.
+        All the key simulation code is in here and is annotated to show what it does'''
+        
+        # Keep running the thread indefinitly until it terminates itself when it runs out of stuff to do
         while True:
-            # Check if there are any more days to simulate
+
+            # Check if there are any more days to simulate, if not then terminate
             if self.inputQueue.empty():
                 return
 
-            # Date to simulate irradiance
+
+            # Day that is being simulated
             simDay = self.inputQueue.get()
             year = simDay.date.year
             month = simDay.date.month
@@ -106,7 +101,6 @@ class thread_SimulateDay(threading.Thread):
             # SIMULATION PARAMETERS
             # --------------------------------------------------------------------------------------------------
             
-            # Unpack all the simulation parameters from the day object
             totalArea = simDay.parameters['Site'].getArrayNum() * simDay.parameters['PVArray'].getArea()
             panelNum = simDay.parameters['PVModule'].getPanelNum() * simDay.parameters['PVArray'].getModuleNum() * simDay.parameters['Site'].getArrayNum()
             
@@ -136,6 +130,7 @@ class thread_SimulateDay(threading.Thread):
             temperature =  simDay.parameters['Site'].getTemperature(month)
 
 
+
             # Number of days into the simulation this day occurs
             currentSimDay = (simDay.date - simDay.parameters['start']).days + 1
             currentDayOfYear = (simDay.date - datetime.date(year, 1, 1)).days + 1
@@ -156,6 +151,7 @@ class thread_SimulateDay(threading.Thread):
             DCCurrents = []
             AC1Currents = []
             AC2Currents = []
+
 
 
             # --------------------------------------------------------------------------------------------------
@@ -191,7 +187,7 @@ class thread_SimulateDay(threading.Thread):
             # SOLAR MODEL
             # --------------------------------------------------------------------------------------------------
 
-            # Simulate the irradiance over a day in half hour increments
+            # Simulate the irradiance over a day in the increment described by SIMULATION_TIMESTEP_MINS
             for i in range(STEPS_PER_DAY):
 
                 # Create a datetime to represent the time of day on the given date
@@ -286,9 +282,19 @@ class thread_SimulateDay(threading.Thread):
 
 
 
+
+# --------------------------------------------------------------------------------------------------
+# SIMULATION OBJECTS
+# --------------------------------------------------------------------------------------------------
+
 class SimulationDay(object):
     ''' Contains a date object with a day to simulate, as well as the output data from the
-    simulation'''
+    simulation.
+
+    This object represents a single day to simulate. The simulation threads treat each day as
+    independant so they can be run in parallel. This contains all the input parameters and 
+    a specific date to simulate. The outputs for the day are stored in there so they are able 
+    to be unpacked and passed back to the controller.'''
     def __init__(self, date, parameters):
         
         # Date to simulate and the parameters of the simulation
@@ -337,8 +343,15 @@ class Simulation(object):
     '''Object to contain the simulation parameters'''
     def __init__(self, start, finish, PVPanel, PVModule, PVArray, DCCable, 
                  Inverter, AC1Cable, Transformer, AC2Cable, CircuitBreaker, Site, Financial,
-                 numThreads=5, simulationTimestepMins=30):
-        '''Initilise the simulation'''
+                 numThreads=30, simulationTimestepMins=30):
+        '''Initilise a simulation instance.
+
+        This object is an instance of a simulation. It requires a set of input objects which provide the simulation
+        parameters. The parameters are passed in the form asset objects which represent different components of the 
+        solar farm, plus a start and finish date. The timestep for calculations can be adjusted, as can the amount of 
+        execution threads (parallel processing elements). A larger timestep give a better resolution but will take 
+        longer to calculate. A larger amount of threads will calculate the result faster but will place more strain on 
+        the PC running the computation'''
         self.start = start
         self.finish = finish
         self.numDays = (finish - start).days
@@ -372,33 +385,35 @@ class Simulation(object):
         self.inputQueue = Queue.Queue()
         self.outputQueue = Queue.Queue()
 
-        # print "Initialising %i day simulation" % self.numDays
-
-        # print "Start date: ", self.start
-        # print "Finish date: ", self.finish
-
         # Queue up the list of days to simulate
         for day in self.days:
             simulationDay = SimulationDay(day, self.parameters)
             self.inputQueue.put(simulationDay)
 
-        # print "Added %i simulations to the work queue" % self.inputQueue.qsize()
 
     def getStartDate(self):
+        ''' Returns the start date of the simulation '''
         return self.start
 
     def setStartDate(self, date):
+        ''' Sets the start date of the simulation '''
         self.start = date
 
     def getFinishDate(self):
+        ''' Returns the finish date of the simulation '''
         return self.finish
 
     def setFinishDate(self, date):
+        ''' Sets the finish date of the simulation '''
         self.finish = date
 
 
     def runPower(self):
-        ''' Runs the power flow simulation'''
+        ''' Runs the power flow simulation.
+
+        This gets the simulation days that were created and queued up when the simulation was initialised and
+        starts a pool of simulation threads to start processing the queue. This method is non blocking - it merely
+        invokes the simulation which runs on seperate threads to the program'''
         numberOfSimulationDays = self.inputQueue.qsize()
 
         # Spawn the threads
@@ -408,7 +423,9 @@ class Simulation(object):
             simulationThread.start()
 
     def getPowerProgress(self):
-        ''' Returns percentage of days simulated in the power simulation as a number between 0 and 100 '''
+        ''' Returns percentage of days simulated in the power simulation as a number between 0 and 100. 
+
+        This is used to update the progress bar in the GUI'''
         # Get the total amount of day to be simulated and the amount of days left to simulate
         itemsLeft = self.inputQueue.qsize()
         totalItems = self.numDays
@@ -421,7 +438,11 @@ class Simulation(object):
 
 
     def getPowerResults(self):
-        ''' Processes and gets the power results. Blocks until the power simulation is finished.'''
+        ''' Processes and gets the power results. 
+
+        Blocks until the power simulation is finished. When all the jobs are done this will retreieve all the results
+        from the output queue, sort them into order by date and unpack the data from each day into arrays which are saved
+        in a dictionary and returned to the caller.'''
         
         # Join threads from power simulation - this blocks until the simulation is complete
         self.inputQueue.join()
@@ -482,7 +503,11 @@ class Simulation(object):
 
 
     def runFinancial(self):
-        '''Runs the finicial simulation, requires the results from power flow simulation. Blocks until complete'''
+        '''Runs the finicial simulation.
+
+        This requires the results from power flow simulation, hence the power flow simulation must be complete BEFORE this
+        method is called. Blocks until complete. Once the simulation is done it will return a dictionary of arrays with the 
+        simulation results.'''
 
         # Sum the costs of all the assets 
         initalCosts = self.parameters['PVArray'].getCost()
@@ -504,7 +529,7 @@ class Simulation(object):
         accumulativeRevenue = []
 
         # Variable to accumlate revenue
-        revenueAccumulator = CURRENCY_EXCHANGE.withdraw(0, 'USD')
+        revenueAccumulator = self.parameters['Financial'].getCurrencyExchange().withdraw(0, 'USD')
 
         # Simulate the financial life of the project
         for i in range(self.numDays):
@@ -517,9 +542,6 @@ class Simulation(object):
             dailyCapitalWorth += 3 * self.parameters['AC1Cable'].getDepreciatedValue(i)  # Worth of AC1 cables
             dailyCapitalWorth += self.parameters['Transformer'].getDepreciatedValue(i) * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
             dailyCapitalWorth += 3 * self.parameters['AC2Cable'].getDepreciatedValue(i)  # Worth of the GEP transmission line
-
-            if i == 0:
-                self.parameters['Financial'].addToLoan(dailyCapitalWorth)
             
             # Save the current net asset value
             netAssetValue.append(dailyCapitalWorth)
@@ -541,7 +563,6 @@ class Simulation(object):
 
             # Save the current loan value
             loanValue.append(self.parameters['Financial'].getCurrentLoanValue())
-
 
 
         # Convert all the results to float arrays in the base currency

@@ -1,12 +1,10 @@
 # Solar Farm Calculator
 ### A software tool to model a generic solar photovoltaic farm.
 
-
-## Author
+## Authors:
 [Ashok Fernandez](https://github.com/ashokfernandez/),
 [Jarrad Raumati](https://github.com/jarradraumati/),
 Darren O'Neill
-
 
 ## Description: 
 Models the technical and financial details of a photovoltaic farm. The user

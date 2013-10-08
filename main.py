@@ -1,3 +1,19 @@
+'''@package main.py
+
+Main entry point of the solar calculator. This is essentailly the controller of an MVC type program, 
+the model is Simulation.py and the view is GUI.py. This implements events that are triggered when 
+a user clicks on buttons in the GUI and triggers the appropriate response - such as validating the
+input and running a simulation if applicable. This module also catches exceptions that occur in the
+program and displays relevant error messages to the user as to what's happened rather than totally 
+crashing.
+
+Author: Ashok Fernandez
+Author: Darren O'Neill
+Author: Jarrad Raumati 
+Date: 20/09/2013
+'''
+
+# Import system modules
 import os
 import urllib2                    
 import sys
@@ -14,15 +30,10 @@ import SolarCalculator.GUI
 import SolarCalculator.Simulation 
 import SolarCalculator.Assets 
 
+# Load the utility modules
 import SolarCalculator.Utils.ReverseGeocode
 import SolarCalculator.Utils.AverageTemperatureData 
 
-# Change the working directory to the resources folder in the search path of the program
-os.chdir('./Resources/')
-
-
-
-	
 
 # ------------------------------------------------------------------------------------------------------
 # CONSTANTS
@@ -32,13 +43,27 @@ RED = (255,0,0, 200)
 BLACK = (0,0,0)
 WHITE = (255,255,255,255)
 
+
+# ------------------------------------------------------------------------------------------------------
+# SIMULATION RESULTS
+# ------------------------------------------------------------------------------------------------------
+
+FINANCIAL_RESULTS = None # TODO - Find a better way to do this. Currently the "Run Simulation" callback has to
+POWER_RESULTS = None     # finish before the graphs are shown so a call to wx.FutureCall is made so data can't be
+                         # passed directly to the plotting function. I (Ashok) am not comfortable with these globals!
+
+
 # ------------------------------------------------------------------------------------------------------
 # UTILITY FUNCTIONS
 # ------------------------------------------------------------------------------------------------------
 
-
 def internet_on():
-    ''' Returns True if the internet is avaliable, otherwise returns false'''
+    ''' Returns True if the internet is avaliable, otherwise returns False.
+
+    Directly pings Google and checks if a response is found or if an error occured. In general
+    Google should be up, so if this fails then either the internet connection is down or we are
+    all in big trouble!'''
+    
     connectionAvaliable = False
     try:
         # Check if Google is online, use the direct IP to avoid DNS lookup delays
@@ -50,13 +75,19 @@ def internet_on():
     
     return connectionAvaliable
 
+
+
 def get_currency_list():
 	''' Returns a list of the avaliable currencies, as defined in currencyList.txt'''
+	
+	# Open the list of currencies
 	with open('currencyList.txt', 'r') as f:
+		
 		# Read the currencies into an array, the go through the array and remove the newlines
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
 		return currencies
+
 
 
 def datepicker_to_datetime(datepicker):
@@ -72,8 +103,11 @@ def datepicker_to_datetime(datepicker):
 	pyDate = datetime.date(startYear, startMonth, startDay)
 	return pyDate
 
+
+
 def FinancialFormatter(x, pos):
     '''Converts a money amount into millions or billions if the value is big enough.
+       
        Used as a matplotlib axis formatter'''
     
     # If under a million, print like normal
@@ -89,27 +123,29 @@ def FinancialFormatter(x, pos):
     return format
 
 
-FINANCIAL_RESULTS = None
-POWER_RESULTS = None
 
 def showResults():
+	''' Plots the simlation results and displays the results dialog
+
+	This is called as a callback after the "Run Simulation" click event has finished running a simulation.'''
 	global POWER_RESULTS
 	global FINANCIAL_RESULTS
 
-	# Plot the results
+	# --------------------------------------------------------------------------------------------
+	# PLOT THE RESULTS 
+	# --------------------------------------------------------------------------------------------
+
+	# Grab the finacial axis formatter
 	formatter = FuncFormatter(FinancialFormatter)
 
+	# Plot the average power
 	plt.figure(1, figsize=(14, 11))
 	plt.subplot(311)
 	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'])
 	plt.title('Average Power of the PV farm')
 	plt.ylabel('Power (kW)')
 
-	# plt.subplot(212)
-	# plt.plot(POWER_RESULTS['days'], POWER_RESULTS['sunnyTime'], 'g')
-	# plt.title('Electrical energy of the PV farm at GEP')
-	# plt.ylabel('Energy (kWh)')
-
+	# Plow the financial data
 	a = plt.subplot(312)
 	a.yaxis.set_major_formatter(formatter)
 	p1, = plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'], 'b') 
@@ -118,28 +154,19 @@ def showResults():
 	plt.ylabel('(%s)' % FINANCIAL_RESULTS['baseCurrency'])
 	plt.legend([p1, p2], ["Net Asset Value", "Loan Value"], loc=7)
 
-
+	# Plot the accumulative revenue
 	a = plt.subplot(313)
 	a.yaxis.set_major_formatter(formatter)
 	plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
 	plt.title('Accumlated Revenue')
 	plt.ylabel('(%s)' % FINANCIAL_RESULTS['baseCurrency'])
-	# plt.figure(2)
-	# a = plt.subplot(311)
-	# a.yaxis.set_major_formatter(formatter)
-	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['netAssetValue'])
-	# plt.title('Net Asset Value')
 
-	# a = plt.subplot(312)
-	# a.yaxis.set_major_formatter(formatter)
-	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['loanValue'], 'r')
-	# plt.title('Loan Value')
-
-	# a = plt.subplot(313)
-	# a.yaxis.set_major_formatter(formatter)
-	# plt.plot(FINANCIAL_RESULTS['days'], FINANCIAL_RESULTS['accumulativeRevenue'], 'g')
-	# plt.title('Accumlative Revenue')
 	
+
+	# --------------------------------------------------------------------------------------------
+	# SHOW THE RESULTS DIALOG
+	# --------------------------------------------------------------------------------------------
+
 	# Output the peak currents in each conductor
 	resultsText =   "--------------------------------------------\n"
 	resultsText +=  "------------ POWER FLOW RESULTS ------------\n"
@@ -165,7 +192,6 @@ def showResults():
 	resultsText += "Accumulated Total : \n    %.2f MWh\n" % totalEnergy
 	resultsText += "Daily Average : \n    %.2f MWh\n\n" % averageEnergy
 
-
 	# Averate the effciencies
 	electricalEfficiency = numpy.array(POWER_RESULTS['electricalEffciency'])
 	totalEfficiency = numpy.array(POWER_RESULTS['totalEffciency'])
@@ -177,7 +203,6 @@ def showResults():
 	resultsText += "Total efficiency (Sunlight energy to electricity) : \n    %.2f%% \n" % totalEfficiency
 	resultsText += "Electrical efficiency (Panels output to grid connection) : \n    %.2f%% \n\n\n\n" % electricalEfficiency
 
-
 	
 	# Financial Results
 	resultsText +=  "--------------------------------------------\n"
@@ -188,16 +213,24 @@ def showResults():
 	resultsText += "Total Revenue : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['accumulativeRevenue'][-1], FINANCIAL_RESULTS['baseCurrency'])
 
 
-	resultsBox = DialogBox_SimulationResults(resultsText)
 
+	# Show the results box and plots
+	DialogBox_SimulationResults(resultsText)
 	plt.show()
 
 
 def CreateSimulation(inputParameters, optionalInputParameters):
-	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation '''
+	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation.
 
-	# ---------------------- GEO CODING ---------------------------
-
+	Firstly a reverse geocode is run to check the country that the simulation is in is valid. Using the information of the
+	country we can load the historic temperature data for this country. If the length of the transmission line needs to be
+	calculated we do this using the latitude and longitude of the grid connection point. Then all the objects for the 
+	simulation are created and a simulation object is instantiated. This is then returned so it can be run. '''
+	
+	# --------------------------------------------------------------------------------------------
+	# REVERSE GEO CODING 
+	# --------------------------------------------------------------------------------------------
+	
 	# Get the site information from the Reverse Geocode
 	code = SolarCalculator.Utils.ReverseGeocode.get_country_code(inputParameters['siteLatitude'], inputParameters['siteLongitude'])
 
@@ -206,14 +239,19 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 		raise SolarCalculator.Utils.ReverseGeocode.CountryNotFound("Country Not Found at Given Lat, Long")
 
 
-	# ------------------ LOAD DATA FROM FILES ----------------------
+
+	# --------------------------------------------------------------------------------------------
+	# LOAD DATA FROM FILES 
+	# --------------------------------------------------------------------------------------------
 	
 	# Load the temperature data
 	temperature = SolarCalculator.Utils.AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
 	
 
 
-	# ------------- CALCULATE OPTIONAL PARAMETERS ------------------
+	# --------------------------------------------------------------------------------------------
+	# CALCULATE OPTIONAL PARAMETERS
+	# --------------------------------------------------------------------------------------------
 
 	# If the user specified for the transmission line length to be calculated, then calculate it
 	if optionalInputParameters['TXCableLength'] == None:
@@ -223,14 +261,17 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 		TXCableLength = optionalInputParameters['TXCableLength']
 
 
-	# --------------- CREATE SIMULATION OBJECTS ---------------------
+
+	# --------------------------------------------------------------------------------------------
+	# CREATE SIMULATION OBJECTS 
+	# --------------------------------------------------------------------------------------------
 	
 	# Constants
 	MATERIALS = {}
 	MATERIALS['Copper'] = SolarCalculator.Assets.Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
 	MATERIALS['Aluminium'] = SolarCalculator.Assets.Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
 
-	# Instantiate the panel object
+	# Instantiate solar farm objects
 	panel = SolarCalculator.Assets.PVPanel(voltage=inputParameters['panelVoltage'], 
 		 			rating=inputParameters['panelRating'], 
 		 			degradationRate=inputParameters['panelDegradation'], 
@@ -245,8 +286,6 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 	array = SolarCalculator.Assets.PVArray(moduleType=module, 
 					moduleNum=inputParameters['siteNumModules'], 
 					arrayAngle=inputParameters['panelAngle'])
-
-	
 
 	dcCable = SolarCalculator.Assets.DCCable(diameter=inputParameters['DCCableDiameter'], 
 					  material=MATERIALS[inputParameters['DCCableMaterial']], 
@@ -299,6 +338,8 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 						  powerPrice = inputParameters['financialPowerPrice'], 
 						  baseCurrency=inputParameters['financialBaseCurrency'])
 
+
+	# Create the simulation object
 	simulation = SolarCalculator.Simulation.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
 							PVPanel=panel, PVModule=module, PVArray=array, 
 		               		DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
@@ -306,7 +347,6 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 	                       	numThreads=50, simulationTimestepMins=60)
 
 	return simulation
-
 
 
 
@@ -318,13 +358,15 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 class DialogBox_NoInternet(SolarCalculator.GUI.NoInternet):
 	def __init__( self ):
 		''' Creates the "No Internet" dialog box and shows it as a modal dialog which
-			blocks the program until it is dismissed'''
+			blocks the program until it is dismissed.'''
 		SolarCalculator.GUI.NoInternet.__init__(self, None)
 		self.ShowModal()
 
 	def evt_dialogOK_clicked( self, event ):
 		''' Closes the window when the OK button is pressed'''
 		self.EndModal(1)
+
+
 
 # Implement the functionality of the 'Incomplete Form' dialog box
 class DialogBox_IncompleteForm(SolarCalculator.GUI.IncompleteForm):
@@ -337,6 +379,8 @@ class DialogBox_IncompleteForm(SolarCalculator.GUI.IncompleteForm):
 	def evt_dialogOK_clicked( self, event ):
 		''' Closes the window when the OK button is pressed'''
 		self.EndModal(1)
+
+
 
 # Implement the functionality of the 'Fatal Error' message dialog
 class DialogBox_FatalError(SolarCalculator.GUI.FatalError):
@@ -353,6 +397,7 @@ class DialogBox_FatalError(SolarCalculator.GUI.FatalError):
 		sys.exit()
 
 
+
 # Implement the functionality of the GeoCode error message
 class DialogBox_GeoCodeError(SolarCalculator.GUI.GeoCodeError):
 	def __init__( self ):
@@ -364,6 +409,7 @@ class DialogBox_GeoCodeError(SolarCalculator.GUI.GeoCodeError):
 	def evt_dialogOK_clicked( self, event ):
 		''' Closes the window when the OK button is pressed'''
 		self.EndModal(1)
+
 
 
 # Implement the functionality of the Date error message
@@ -379,6 +425,7 @@ class DialogBox_DateError(SolarCalculator.GUI.DateError):
 		self.EndModal(1)
 
 
+
 # Implement the functionality of the 'Fatal Error' message dialog
 class DialogBox_SimulationResults(SolarCalculator.GUI.SimulationResults):
 	def __init__( self , simulationResults):
@@ -391,6 +438,7 @@ class DialogBox_SimulationResults(SolarCalculator.GUI.SimulationResults):
 	def evt_dialogOK_clicked( self, event ):
 		''' Closes the window when the OK button is pressed'''
 		self.Destroy()
+
 
 
 # Class to show a progress dialog when the simulation is running
@@ -428,19 +476,30 @@ class DialogBox_ProgressDialog(object):
 		self.progressBox.EndModal(1)
 
 
+
 # ------------------------------------------------------------------------------------------------------
 # INPUT VALIDATION CLASS
 # ------------------------------------------------------------------------------------------------------
 
 # Encapsulate data entry and validation
 class InputField(object):
-	'''Stores an input field and corrsponding label and encapsulates validation of the input field'''
+	'''Stores an input field and corrsponding label and encapsulates validation of the input field.
+
+	Labels and text inputs from the view are grouped together and given constraints of what is valid input. If 
+	the value in the text input is invalid the label is coloured red and the validateField method returns False.
+	This allows the input fields to be validated in bulk.
+	'''
+
+	# Colours to colour the labels when the input is valid or invalid
 	RED = (255,0,0, 200)
 	BLACK = (0,0,0)
 	WHITE = (255,255,255,255)
 
-	''' Holds an input field wxTextCtl and it's corrosponding label'''
+
 	def __init__(self, field, label, condition='', upperLimit=False, lowerLimit=False):
+		''' Constructs a InputField object.
+
+		Holds an input field wxTextCtl and it's corrosponding label'''
 		self.field = field
 		self.label = label
 		self.condition = condition.lower()
@@ -461,13 +520,15 @@ class InputField(object):
 		self.field.AppendText(value)
 
 	def validateField(self):
-		''' Validates the input in the wxTextCtl inputField to be purely numeric. Condition can be either a string 
-		containing "p" or "n" to contrain the inputField to positive or negative numbers respectivly, and can also
-		contain "i" to specify the number must be an integer. These can be combined, for instance "pi" specifies a
-		positive integer. If the field is valid the wxStaticText label fieldLabel's colour text is set to black,
+		''' Validates the input in the wxTextCtl inputField to be purely numeric. 
+
+		Condition can be either a string containing "p" or "n" to contrain the inputField to positive or negative numbers 
+		respectivly, and can also contain "i" to specify the number must be an integer. These can be combined, for instance 
+		"pi" specifies a positive integer. If the field is valid the wxStaticText label fieldLabel's colour text is set to black,
 		otherwise it is set to red. The funtion returns the fields value if the input was valid, otherwise it returns 
 		false. '''
 	
+		# Read the users input
 		userInput = self.__getFieldValue()
 		result = None
 		
@@ -511,10 +572,16 @@ class InputField(object):
 
 		return result
 
+
+
 # Special case when an input field is automatically calculated from other data
 class OptionalInputField(InputField):
+	''' Similar to InputField however a checkbox is added which if checked will disable the field from being
+	validated and hence will cause the validateField method to return None instead of the validated value.'''
+
 	def __init__(self, field, label, checkbox, condition='', upperLimit=False, lowerLimit=False):
 		''' Initialises the input field superclass and saves the checkbox '''
+		
 		# Initialise superclass stuff	
 		InputField.__init__(self, field, label, condition, upperLimit, lowerLimit)
 
@@ -538,6 +605,8 @@ class OptionalInputField(InputField):
 		else:
 			return InputField.validateField(self)
 
+
+
 # ------------------------------------------------------------------------------------------------------
 # MAIN APPLICATION FRAME
 # ------------------------------------------------------------------------------------------------------
@@ -545,10 +614,19 @@ class OptionalInputField(InputField):
 # Inherit from the ApplicationFrame created in wxFowmBuilder and create the SolarFarmCalculator
 # class which implements the data processing of the GUI
 class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
+	''' Main application window.
+
+	This handles the main application window, and more importantly defines the user interaction with the window. 
+	Events for button presses are implemented in here as well as the running of a simulation when the "Run Simluation"
+	button is pressed'''
 
 	def __init__(self,parent):
-		''' Intialises the main parent window of the program'''
-		#initialize parent class
+		''' Intialises the main parent window of the program.
+
+		Saves references to all the input fields and defines the valid limits and contraints on each input. Loads the 
+		currency list into the drop down boxes.'''
+
+		# Initialize parent class
 		SolarCalculator.GUI.ApplicationFrame.__init__(self,parent)
 
 		# Attempt to load the list of avaliable currencies
@@ -557,7 +635,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		except:
 			DialogBox_FatalError("Unable to load the list of currencies from currencyList.txt")
 
-		# Set the values of all the currencie lists to the list of avaliable currencies
+		# Set the values of all the currency lists to the list of avaliable currencies
 		self.siteCost_currency.SetItems(currencies)
 		self.financialCurrency_currency.SetItems(currencies)
 		self.panelCost_currency.SetItems(currencies)
@@ -569,9 +647,10 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.TXCableCost_currency.SetItems(currencies)
 
 
+		# --------------------------------------------------------------------------------------------
+		# SAVE REFERENCES TO INPUT FIELDS
+		# --------------------------------------------------------------------------------------------
 
-
-		# ----- Save a reference to all the input fields and their labels
 		self.inputFields = {}
 		self.optionalInputFields = {}
 		
@@ -644,7 +723,10 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 
 
-		# ----- Save a reference to all the selector objects so we can quickly get their values
+		# --------------------------------------------------------------------------------------------
+		# SAVE A REFERENCE TO ALL SELECTOR BOXES
+		# --------------------------------------------------------------------------------------------
+		# 
 		self.selectors = {}
 
 		# CURRENCIES
@@ -663,12 +745,13 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.selectors['ACCableMaterial'] = self.ACCableMaterial_input
 		self.selectors['TXCableMaterial'] = self.TXCableMaterial_input
 
-		# USED FOR TESTING PURPOSES
-		self.__loadDemoSimulation()
+		# USED FOR TESTING PURPOSES - loads default values into the fields
+		# self.__loadDemoSimulation()
 
 	
 	def __loadDemoSimulation(self):
 		''' Loads demo values into the simulation fields for testing purposes '''	
+		
 		# SITE VARIABLES
 		self.inputFields['siteCost'].setFieldValue('10000000')
 		self.inputFields['siteAppreciation'].setFieldValue('1.03')
@@ -738,20 +821,28 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 
 	def evt_closeApp_clicked( self, event ):
-		''' Terminates the program when the red cross is clicked on the main window'''
+		''' Event handler for the red close cross.
+
+		Terminates the program when the red cross is clicked on the main window'''
+		
 		# DO ANY CLEAN UP HERE
 		sys.exit()
 
 	def evt_runSimulation_clicked( self, event ):
-		''' Event that is run when the "Run Simulation" button is clicked. This will validate all the inputs, check for
-		an internet connection and run the simulation if all the inputs are correct. Otherwise an error dialog is shown
-		telling the user what they did wrong'''
+		''' Event that is run when the "Run Simulation" button is clicked. 
+
+		This will validate all the inputs, check for an internet connection and run the simulation if all the inputs 
+		are correct. Otherwise an error dialog is shown telling the user what they did wrong'''
 
 		# Check the internet is on, if not then display the No internet dialog
 		if not internet_on():
 			DialogBox_NoInternet()
 			return None
 		
+
+		# --------------------------------------------------------------------------------------------
+		# VALIDATE INPUT DATA
+		# --------------------------------------------------------------------------------------------			
 
 		# Save the validated input data to a dictionary
 		inputData = {}
@@ -790,7 +881,6 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 			inputData['endDate'] = endDate
 
 
-
 		# Get the value of the selector boxes
 		for key in self.selectors.keys():
 			
@@ -807,6 +897,10 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 			# Save the selection
 			inputData[key] = value
 
+
+		# --------------------------------------------------------------------------------------------
+		# RUN A SIMULATION
+		# --------------------------------------------------------------------------------------------
 
 		# Try to run the simulation, catching any errors that may occur
 		try:
@@ -846,21 +940,20 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 			return None
 
+		
+		# Handle the case when the reverse geocode fails
 		except SolarCalculator.Utils.ReverseGeocode.CountryNotFound:
 			DialogBox_GeoCodeError()
 			return None
-		# except:
-			# DialogBox_FatalError("Something went wrong in the simulation, the program will terminate now.\n Goodbye.")
-			
-			
-	
-
 		
-		
-
+		# Handle a total crash a burn gracefully
+		except:
+			DialogBox_FatalError("Something went wrong in the simulation, the program will terminate now.\n Goodbye.")
+			
 	
 	def evt_calculateTXCableLength_checked( self, event ):
 		''' Enables and disables the tx cable length text ctrl when the "Calculate Cable Length" checkbox is toggled '''
+		
 		# Check if the checkbox is clicked or not to determine if the wxTextCtrl should be enabled
 		isEnabled = True
 		if event.IsChecked():
@@ -878,15 +971,20 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 # BOOTSTRAP MAIN PROGRAM
 # ------------------------------------------------------------------------------------------------------
 
-# Mandatory in wx, create an app, False stands for not deteriction stdin/stdout
-# Refer manual for details
-app = wx.App(False)
- 
-# Create an object of Solar Farm Calculator
-frame = SolarFarmCalculator(None)
+if __name__ == '__main__':
+	
+	# Change the working directory to the resources folder so the currency list and picture can be found
+	os.chdir('./Resources/')
 
-# Show the frame
-frame.Show(True)
+	# Mandatory in wx, create an app, False stands for not deteriction stdin/stdout
+	# Refer manual for details
+	app = wx.App(False)
+	 
+	# Create an object of Solar Farm Calculator
+	frame = SolarFarmCalculator(None)
 
-# Start the application
-app.MainLoop()
+	# Show the frame
+	frame.Show(True)
+
+	# Start the application
+	app.MainLoop()
