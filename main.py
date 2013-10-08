@@ -1,20 +1,25 @@
-
-import urllib2                    # For testing the internet connection
+import os
+import urllib2                    
 import sys
 import wx
+import datetime
 
-import SolarFarmGUI
-import SolarSimulation
-import SolarAssets
-import PyExchangeRates
-import ReverseGeocode
-import Countries
-import AverageTemperatureData
-
+# Import NumPy and MatPlotLib
 import numpy
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
-import datetime
+
+# Load the SolarCalculator modules
+import SolarCalculator.GUI
+import SolarCalculator.Simulation 
+import SolarCalculator.Assets 
+
+import SolarCalculator.Utils.ReverseGeocode
+import SolarCalculator.Utils.AverageTemperatureData 
+
+# Change the working directory to the resources folder in the search path of the program
+os.chdir('./Resources/')
+
 
 
 	
@@ -194,17 +199,17 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 	# ---------------------- GEO CODING ---------------------------
 
 	# Get the site information from the Reverse Geocode
-	code = ReverseGeocode.get_country_code(inputParameters['siteLatitude'], inputParameters['siteLongitude'])
+	code = SolarCalculator.Utils.ReverseGeocode.get_country_code(inputParameters['siteLatitude'], inputParameters['siteLongitude'])
 
 	# Throw an exception if the GeoCode Fails
 	if code == False:
-		raise ReverseGeocode.CountryNotFound("Country Not Found at Given Lat, Long")
+		raise SolarCalculator.Utils.ReverseGeocode.CountryNotFound("Country Not Found at Given Lat, Long")
 
 
 	# ------------------ LOAD DATA FROM FILES ----------------------
 	
 	# Load the temperature data
-	temperature = AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
+	temperature = SolarCalculator.Utils.AverageTemperatureData.TEMPERATURE_DATA[code]['PAST']	
 	
 
 
@@ -212,7 +217,7 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 
 	# If the user specified for the transmission line length to be calculated, then calculate it
 	if optionalInputParameters['TXCableLength'] == None:
-		TXCableLength = calcLength(inputParameters['siteLatitude'], inputParameters['siteLongitude'], 
+		TXCableLength = SolarCalculator.Simulation.calcLength(inputParameters['siteLatitude'], inputParameters['siteLongitude'], 
 								   inputParameters['siteGridLatitude'], inputParameters['siteGridLongitude'])
 	else:
 		TXCableLength = optionalInputParameters['TXCableLength']
@@ -222,11 +227,11 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 	
 	# Constants
 	MATERIALS = {}
-	MATERIALS['Copper'] = SolarAssets.Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
-	MATERIALS['Aluminium'] = SolarAssets.Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
+	MATERIALS['Copper'] = SolarCalculator.Assets.Material(name='Cu', resistivity=1.68e-8, tempCoefficient=3.62e-3)
+	MATERIALS['Aluminium'] = SolarCalculator.Assets.Material(name='Al', resistivity=2.82e-8, tempCoefficient=3.9e-3)
 
 	# Instantiate the panel object
-	panel = SolarAssets.PVPanel(voltage=inputParameters['panelVoltage'], 
+	panel = SolarCalculator.Assets.PVPanel(voltage=inputParameters['panelVoltage'], 
 		 			rating=inputParameters['panelRating'], 
 		 			degradationRate=inputParameters['panelDegradation'], 
 		 			area=inputParameters['panelArea'], 
@@ -234,50 +239,50 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 		 			currency=inputParameters['panelCurrency'],
 		 			depRate=inputParameters['panelDepreciation'])
 
-	module = SolarAssets.PVModule(panelType=panel, 
+	module = SolarCalculator.Assets.PVModule(panelType=panel, 
 		 			  panelNum=inputParameters['siteNumPanels'])
 	
-	array = SolarAssets.PVArray(moduleType=module, 
+	array = SolarCalculator.Assets.PVArray(moduleType=module, 
 					moduleNum=inputParameters['siteNumModules'], 
 					arrayAngle=inputParameters['panelAngle'])
 
 	
 
-	dcCable = SolarAssets.DCCable(diameter=inputParameters['DCCableDiameter'], 
+	dcCable = SolarCalculator.Assets.DCCable(diameter=inputParameters['DCCableDiameter'], 
 					  material=MATERIALS[inputParameters['DCCableMaterial']], 
 					  length=inputParameters['DCCableLength'], 
 					  costPerMeter=inputParameters['DCCableCost'], 
 					  depRate=inputParameters['DCCableDepreciation'])	
 
-	ac1Cable = SolarAssets.AC1Cable(strandNum=inputParameters['ACCableNumStrands'], 
+	ac1Cable = SolarCalculator.Assets.AC1Cable(strandNum=inputParameters['ACCableNumStrands'], 
 						diameter=inputParameters['ACCableDiameter'], 
 						material=MATERIALS[inputParameters['ACCableMaterial']], 
 						length=inputParameters['ACCableLength'], 
 						costPerMeter=inputParameters['ACCableCost'], 
 						depRate=inputParameters['ACCableDepreciation'])
 
-	ac2Cable = SolarAssets.AC2Cable(strandNum=inputParameters['TXCableNumStrands'], 
+	ac2Cable = SolarCalculator.Assets.AC2Cable(strandNum=inputParameters['TXCableNumStrands'], 
 						diameter=inputParameters['TXCableDiameter'], 
 						material=MATERIALS[inputParameters['TXCableMaterial']], 
 						length=TXCableLength, 
 						costPerMeter=inputParameters['TXCableCost'], 
 						depRate=inputParameters['TXCableDepreciation'])
 
-	inverter = SolarAssets.Inverter(powerFactor=inputParameters['inverterPowerFactor'], 
+	inverter = SolarCalculator.Assets.Inverter(powerFactor=inputParameters['inverterPowerFactor'], 
 						efficiency=inputParameters['inverterEfficiency'], 
 						voltage=inputParameters['inverterOutputVoltage'], 
 						cost=inputParameters['inverterCost'] , 
 						depRate=inputParameters['inverterDepreciation'])
 	
-	transformer = SolarAssets.Transformer(voltage=inputParameters['transformerOutputVoltage'], 
+	transformer = SolarCalculator.Assets.Transformer(voltage=inputParameters['transformerOutputVoltage'], 
 							  efficiency=inputParameters['transformerEfficiency'] , 
 							  VARating=inputParameters['transformerRating'] , 
 							  cost=inputParameters['transformerCost'] , 
 							  depRate=inputParameters['transformerDepreciation'])
 
-	circuitBreaker = SolarAssets.CircuitBreaker(cost=inputParameters['circuitBreakerCost'])
+	circuitBreaker = SolarCalculator.Assets.CircuitBreaker(cost=inputParameters['circuitBreakerCost'])
 
-	site = SolarAssets.Site(transformerNum=inputParameters['siteNumTransformers'], 
+	site = SolarCalculator.Assets.Site(transformerNum=inputParameters['siteNumTransformers'], 
 				arrayNum=inputParameters['siteNumArrays'], 
 				latitude=inputParameters['siteLatitude'], 
 				longitude=inputParameters['siteLongitude'],
@@ -288,13 +293,13 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 		  		currency=inputParameters['siteCurrency'],
 				landAppRate=inputParameters['siteAppreciation'])
 
-	financial = SolarAssets.Financial(maintenance=inputParameters['financialMaintenance'], 
+	financial = SolarCalculator.Assets.Financial(maintenance=inputParameters['financialMaintenance'], 
 						  miscExpenses=inputParameters['financialMiscExpenses'], 
 						  interestRate =inputParameters['financialInterestRate'],
 						  powerPrice = inputParameters['financialPowerPrice'], 
 						  baseCurrency=inputParameters['financialBaseCurrency'])
 
-	simulation = SolarSimulation.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
+	simulation = SolarCalculator.Simulation.Simulation(start=inputParameters['startDate'], finish=inputParameters['endDate'], 
 							PVPanel=panel, PVModule=module, PVArray=array, 
 		               		DCCable=dcCable, Inverter=inverter, AC1Cable=ac1Cable, Transformer=transformer, 
 		                   	AC2Cable=ac2Cable, CircuitBreaker=circuitBreaker, Site=site, Financial=financial,
@@ -310,11 +315,11 @@ def CreateSimulation(inputParameters, optionalInputParameters):
 # ------------------------------------------------------------------------------------------------------
 
 # Implement the functionality of the 'No Internet' dialog box
-class DialogBox_NoInternet(SolarFarmGUI.NoInternet):
+class DialogBox_NoInternet(SolarCalculator.GUI.NoInternet):
 	def __init__( self ):
 		''' Creates the "No Internet" dialog box and shows it as a modal dialog which
 			blocks the program until it is dismissed'''
-		SolarFarmGUI.NoInternet.__init__(self, None)
+		SolarCalculator.GUI.NoInternet.__init__(self, None)
 		self.ShowModal()
 
 	def evt_dialogOK_clicked( self, event ):
@@ -322,11 +327,11 @@ class DialogBox_NoInternet(SolarFarmGUI.NoInternet):
 		self.EndModal(1)
 
 # Implement the functionality of the 'Incomplete Form' dialog box
-class DialogBox_IncompleteForm(SolarFarmGUI.IncompleteForm):
+class DialogBox_IncompleteForm(SolarCalculator.GUI.IncompleteForm):
 	def __init__( self ):
 		''' Creates the "Incomplete Form" dialog box and shows it as a modal dialog which
 			blocks the program until it is dismissed'''
-		SolarFarmGUI.IncompleteForm.__init__(self, None)
+		SolarCalculator.GUI.IncompleteForm.__init__(self, None)
 		self.ShowModal()
 
 	def evt_dialogOK_clicked( self, event ):
@@ -334,11 +339,11 @@ class DialogBox_IncompleteForm(SolarFarmGUI.IncompleteForm):
 		self.EndModal(1)
 
 # Implement the functionality of the 'Fatal Error' message dialog
-class DialogBox_FatalError(SolarFarmGUI.FatalError):
+class DialogBox_FatalError(SolarCalculator.GUI.FatalError):
 	def __init__( self , errorMessage):
 		''' Creates the "Fatal Error" dialog box and uses the given string as the error message.
 		the program will quit when the dialog is dismissed'''
-		SolarFarmGUI.FatalError.__init__(self, None)
+		SolarCalculator.GUI.FatalError.__init__(self, None)
 		self.fatalErrorLabel.AppendText(errorMessage)
 		self.ShowModal()
 
@@ -349,11 +354,11 @@ class DialogBox_FatalError(SolarFarmGUI.FatalError):
 
 
 # Implement the functionality of the GeoCode error message
-class DialogBox_GeoCodeError(SolarFarmGUI.GeoCodeError):
+class DialogBox_GeoCodeError(SolarCalculator.GUI.GeoCodeError):
 	def __init__( self ):
 		''' Creates the "GeoCode Error" dialog box and uses the given string as the error message.
 		the program will quit when the dialog is dismissed'''
-		SolarFarmGUI.GeoCodeError.__init__(self, None)
+		SolarCalculator.GUI.GeoCodeError.__init__(self, None)
 		self.ShowModal()
 
 	def evt_dialogOK_clicked( self, event ):
@@ -362,11 +367,11 @@ class DialogBox_GeoCodeError(SolarFarmGUI.GeoCodeError):
 
 
 # Implement the functionality of the Date error message
-class DialogBox_DateError(SolarFarmGUI.DateError):
+class DialogBox_DateError(SolarCalculator.GUI.DateError):
 	def __init__( self ):
 		''' Creates the "Date Error" dialog box and uses the given string as the error message.
 		the program will quit when the dialog is dismissed'''
-		SolarFarmGUI.DateError.__init__(self, None)
+		SolarCalculator.GUI.DateError.__init__(self, None)
 		self.ShowModal()
 
 	def evt_dialogOK_clicked( self, event ):
@@ -375,11 +380,11 @@ class DialogBox_DateError(SolarFarmGUI.DateError):
 
 
 # Implement the functionality of the 'Fatal Error' message dialog
-class DialogBox_SimulationResults(SolarFarmGUI.SimulationResults):
+class DialogBox_SimulationResults(SolarCalculator.GUI.SimulationResults):
 	def __init__( self , simulationResults):
 		''' Creates the "Fatal Error" dialog box and uses the given string as the error message.
 		the program will quit when the dialog is dismissed'''
-		SolarFarmGUI.SimulationResults.__init__(self, None)
+		SolarCalculator.GUI.SimulationResults.__init__(self, None)
 		self.simulationResultsLabel.AppendText(simulationResults)
 		self.Show()
 
@@ -539,12 +544,12 @@ class OptionalInputField(InputField):
 
 # Inherit from the ApplicationFrame created in wxFowmBuilder and create the SolarFarmCalculator
 # class which implements the data processing of the GUI
-class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
+class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 	def __init__(self,parent):
 		''' Intialises the main parent window of the program'''
 		#initialize parent class
-		SolarFarmGUI.ApplicationFrame.__init__(self,parent)
+		SolarCalculator.GUI.ApplicationFrame.__init__(self,parent)
 
 		# Attempt to load the list of avaliable currencies
 		try:
@@ -841,7 +846,7 @@ class SolarFarmCalculator(SolarFarmGUI.ApplicationFrame):
 
 			return None
 
-		except ReverseGeocode.CountryNotFound:
+		except SolarCalculator.Utils.ReverseGeocode.CountryNotFound:
 			DialogBox_GeoCodeError()
 			return None
 		# except:
