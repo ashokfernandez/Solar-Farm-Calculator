@@ -381,8 +381,9 @@ class Site(Asset):
         return self.longitude
 
     def getTemperature(self, month):
-        ''' Get the temperature of the site during the given month, months are specified
-        as 1 for January and 12 for December '''
+        ''' Get the temperature of the site during the given month. 
+        
+        Note: months are specified as a number between 1 and 12 - 1 for January and 12 for December '''
         return self.temperature[month - 1]
 
 
@@ -391,12 +392,27 @@ class Site(Asset):
 # --------------------------------------------------------------------------------------------------
 
 class Financial(object):
-    ''' Class that stores the information relating to the finanical data that is independent of the
-    solar farm '''
+    ''' Stores the information relating to the finanical data relevant to the solar farm.
+    
+        This class is used to encapsulate the finaicial data relating to the solar farm as a whole.
+        The financial model used assumes that all expenses in the project are funded by some sort of
+        loan with is increasing in size due to interest. The loan is paid back daily with the revenue 
+        made by selling power back to the grid at the specified power price. The total lone size is
+        the cost of all the assets, plus miscalleneous expense - this is used to represent all the other
+        costs associated with setting up a project such as construction costs, labour and legal fees etc.
+    '''
     exchange = CURRENCY_EXCHANGE
 
     def __init__(self, maintenance, miscExpenses, interestRate, powerPrice, baseCurrency='USD'):
-        ''' Initialise the Financial object '''
+        ''' Initialises the Financial object 
+
+            This creates the financial object. The parameters in this object are as follows:
+            maintenance - Yearly maintenance budget. Added as a expense to the loan.
+            miscExpenses - Initial startup costs to add to the loan
+            interestRate - interest rate of the loan
+            powerPrice - price per kWh (given in the baseCurrency) that power is sold back to the grid for
+            baseCurrency - the standard currency that all calculation results is given in
+        '''
         self.baseCurrency = baseCurrency         # Base currency that results are returned in
         self.interestRate = interestRate                                               # Interest rate (%/year)
         self.maintenance = Financial.exchange.withdraw(maintenance,self.baseCurrency)  # Maintaince budget per year
@@ -405,21 +421,27 @@ class Financial(object):
         
 
     def getDailyMaintenance(self):
-        ''' Return the maintenance budget per year '''
+        ''' Returns the maintenance budget per year '''
         return self.maintenance / 365.0
 
     def addToLoan(self, cost):
-        ''' Adds money to the initial cost '''
+        ''' Adds money to the loan
+
+        Used to add maintenance costs on to the loan every day '''
         self.loan += cost
         self.loan.convert(self.baseCurrency)
 
     def makeLoanPayment(self, payment):
-        ''' Pays back money to the loan for the initial costs '''
+        ''' Pays back money to the loan 
+
+        Used when the farm sells power back to the grid - this money is used to payback the loan'''
         self.loan -= payment
         self.loan.convert(self.baseCurrency)
 
     def accumlateDailyInterest(self):
-        ''' Adds interest to the intial expenses loan '''
+        ''' Adds interest to the intial expenses loan 
+
+        Calculates the daily interest on the loan by the given interest rate and adds it to the loan'''
         if self.loan.getAmount() > 0:
             self.loan *= (1 + self.interestRate/(365*100))
             self.loan.convert(self.baseCurrency)
