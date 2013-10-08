@@ -1,6 +1,15 @@
-# Average monthly temperature data pulled from http://data.worldbank.org/developers/climate-data-api
-# PAST is based on measurements from 1980 to 1999
-# FUTURE is based on future calculations from 2020 to 2039
+'''@package AverageTemperatureData.py
+
+Average monthly temperature data for several hundred different countries
+PAST is based on measurements from 1980 to 1999
+FUTURE is based on future calculations from 2020 to 2039
+
+SOURCE: http://data.worldbank.org/developers/climate-data-api
+
+Author: Ashok Fernandez
+Date: 16/09/2013
+'''
+
 
 TEMPERATURE_DATA = {
     "ABW": {

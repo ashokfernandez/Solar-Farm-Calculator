@@ -63,9 +63,14 @@ def calcCableResistance(cable, temperature):
 # --------------------------------------------------------------------------------------------------
 
 class thread_SimulateDay(threading.Thread):
+    '''Thread to simulate the power flow over a given day.
+
+    Takes an input in the form of a queue of SimulationDay objects, gets a day from the queue, runs the simulation 
+    for that day and stores the result inside the SimulationDay object before pushing it to the output queue. Terminates
+    when there are not more days left in the input queue'''
+
     def __init__(self, inputQueue, outputQueue, timestep_mins):
-        ''' Takes an input of SimulationDay objects, runs the simulation for that day and stores
-        the result inside the SimulationDay object before pushing it to the output queue'''
+        ''' Intantiates a simulation thread'''
         threading.Thread.__init__(self)
         self.timestep_mins = timestep_mins
         self.inputQueue = inputQueue
@@ -83,7 +88,6 @@ class thread_SimulateDay(threading.Thread):
             # Check if there are any more days to simulate, if not then terminate
             if self.inputQueue.empty():
                 return
-
 
             # Day that is being simulated
             simDay = self.inputQueue.get()
@@ -295,8 +299,9 @@ class SimulationDay(object):
     independant so they can be run in parallel. This contains all the input parameters and 
     a specific date to simulate. The outputs for the day are stored in there so they are able 
     to be unpacked and passed back to the controller.'''
+
     def __init__(self, date, parameters):
-        
+        ''' Initialises a simulation day at the given date using the given parameter dictionary'''    
         # Date to simulate and the parameters of the simulation
         self.date = date
         self.parameters = parameters
@@ -341,6 +346,7 @@ class SimulationDay(object):
 
 class Simulation(object):
     '''Object to contain the simulation parameters'''
+    
     def __init__(self, start, finish, PVPanel, PVModule, PVArray, DCCable, 
                  Inverter, AC1Cable, Transformer, AC2Cable, CircuitBreaker, Site, Financial,
                  numThreads=30, simulationTimestepMins=30):

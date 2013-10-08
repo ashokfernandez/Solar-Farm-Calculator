@@ -1,5 +1,13 @@
-# Arrangement of data from here (http://www.nationsonline.org/oneworld/country_code_list.htm)
-# in various different dictionaries for quick access
+'''@package AverageTemperatureData.py
+
+Mapping of country names to their ISO ALPHA-2 and ISO ALPHA-3 codes. Contains
+reverse mappings so countries can be reference by code and the name returned etc.
+
+SOURCE: http://www.nationsonline.org/oneworld/country_code_list.htm)
+
+Author: Ashok Fernandez
+Date: 16/09/2013
+'''
 
 # Long written country name to ISO ALPHA-3 Code
 NAME_TO_LONG_CODE = { 

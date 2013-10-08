@@ -1,12 +1,28 @@
+'''@package ReverseGeocode.py
+
+Thin wrapper around the Google Maps reverse geocoding API to allow searches for locations via
+latitude and longitude. The search returns many possible locations by we are only interested in
+the country so this is all that is kept.
+
+Author: Ashok Fernandez
+Date: 16/09/2013
+'''
+
 import Countries				  # Contains all the countrie codes and names
 import urllib2                    # For downloading the currency data
 import json                       # Allows the data to be decoded
 
 BASE_URL = "http://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&sensor=false"
 
+
+# --------------------------------------------------------------------------------------------------------------------
+# EXCEPTIONS
+# --------------------------------------------------------------------------------------------------------------------
+
 class CountryNotFound(Exception):
 	''' Raised when the geocode could not find a country'''
 	pass
+
 
 # --------------------------------------------------------------------------------------------------------------------
 # MISC FUNCTIONS
