@@ -105,7 +105,7 @@ def datepicker_to_datetime(datepicker):
 
 
 
-def FinancialFormatter(x, pos):
+def financialFormatter(x, pos):
     '''Converts a money amount into millions or billions if the value is big enough.
        
        Used as a matplotlib axis formatter'''
@@ -136,7 +136,7 @@ def showResults():
 	# --------------------------------------------------------------------------------------------
 
 	# Grab the finacial axis formatter
-	formatter = FuncFormatter(FinancialFormatter)
+	formatter = FuncFormatter(financialFormatter)
 
 	# Plot the average power
 	plt.figure(1, figsize=(14, 11))
@@ -219,7 +219,7 @@ def showResults():
 	plt.show()
 
 
-def CreateSimulation(inputParameters, optionalInputParameters):
+def createSimulation(inputParameters, optionalInputParameters):
 	''' Takes the input parameters from the view controller and instantiates the necessary components to run a simulation.
 
 	Firstly a reverse geocode is run to check the country that the simulation is in is valid. Using the information of the
@@ -905,7 +905,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		# Try to run the simulation, catching any errors that may occur
 		try:
 			# Create a simulation
-			simulation = CreateSimulation(inputData, optionalData)
+			simulation = createSimulation(inputData, optionalData)
 			
 			# Create a progress dialog
 			progressDialog = DialogBox_ProgressDialog(self)
