@@ -45,13 +45,31 @@ for this project as there is a limit to how often the software will hit the API 
 place it at the top of Assets.py to ensure the exchange rates are retreieved.
 
 ## Build the Documentation:
-The code has been heavily documented, this can be compiled into a PDF using [doxygen](http://www.stack.nl/~dimitri/doxygen/) and [latex](http://www.latex-project.org/). To build the documentation install doxygen and latex then open a shell in the Docs directory and type
+The code has been heavily documented, this can be compiled into a PDF using [doxygen](http://www.stack.nl/~dimitri/doxygen/) and [latex](http://www.latex-project.org/) or as a web reference manual using [Epydoc](http://epydoc.sourceforge.net/). 
+
+### HTML Documentation
+To build the HTML documentation (recommeded over the PDF - it's a lot easier to follow) you first need to install Epydoc. If you have pip installed you can do this opening a terminal and typing
+   
+   sudo pip install epydoc
+
+Otherwise follow the installation instructions on the [Epydoc website](http://epydoc.sourceforge.net/manual-install.html).
+
+Once Epydoc is installed, open a terminal in the /Docs/ folder and type
+
+   epydoc --config epydocfile
+
+This will generate HTML documentation which can be accessed by opening /Docs/html/index.html
+
+### PDF Documentation
+To build the PDF documentation install doxygen and latex then open a shell in the Docs directory and type
 
     doxygen
     cd latex/
     make
 
 A documentation file 'refman.pdf' will be avaliable in the latex folder which outlines in detail the different classes in the code and how they function.
+
+
 
 ## Future Work:
 Ideally it would be nice to package the program up as a standalone .exe and application for Windows and Mac OSX respectively. The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key.
