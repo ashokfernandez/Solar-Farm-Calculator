@@ -51,7 +51,7 @@ The code has been heavily documented, this can be compiled into a PDF using [dox
     cd latex/
     make
 
-A documentation file 'refman.pdf' will be avaliable in the latex folder which outlines in detail the different classes in the code and how they function
+A documentation file 'refman.pdf' will be avaliable in the latex folder which outlines in detail the different classes in the code and how they function.
 
 ## Future Work:
-Ideally it would be nice to package the program up as a standalone .exe and application for Windows and Mac OSX respectivly. The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key
+Ideally it would be nice to package the program up as a standalone .exe and application for Windows and Mac OSX respectively. The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key.
