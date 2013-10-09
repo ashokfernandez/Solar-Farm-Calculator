@@ -155,6 +155,7 @@ class thread_SimulateDay(threading.Thread):
             DCCurrents = []
             AC1Currents = []
             AC2Currents = []
+            powerDaily = []
 
 
 
@@ -249,10 +250,11 @@ class thread_SimulateDay(threading.Thread):
                     energyOutput += AC2Output * (float(SIMULATION_TIMESTEP_MINS) / 60) # Daily output in Wh
                     powerRunVal += AC2Output
 
-                    # Save the DC, AC1, and AC2 currents
+                    # Save the DC, AC1, AC2 currents and output power
                     DCCurrents.append(DCcurrent)
                     AC1Currents.append(IAC1)
                     AC2Currents.append(IAC2)
+                    powerDaily.append(AC2Output)
 
             
             # --------------------------------------------------------------------------------------------------
@@ -270,6 +272,10 @@ class thread_SimulateDay(threading.Thread):
             maxAC1 = max(AC1Currents)
             maxAC2 = max(AC2Currents)
 
+            # Find the maximum and minimum power for the day
+            # powerMin = min(powerDaily)
+            powerMax = max(powerDaily)
+
             # Save the output data to the SimulationDay object
             simDay.averagePower = powerRunVal
             simDay.electricalEffciency = elecEff
@@ -279,6 +285,8 @@ class thread_SimulateDay(threading.Thread):
             simDay.peakCurrent_DC = maxDC
             simDay.peakCurrent_AC1 = maxAC1
             simDay.peakCurrent_AC2 = maxAC2
+            # simDay.powerMin = powerMin
+            simDay.powerMax = powerMax
 
             # Push the completed simulation day to the output queue and tick it off the input queue
             self.outputQueue.put(simDay)
@@ -310,6 +318,8 @@ class SimulationDay(object):
         self.peakCurrent_DC = 0
         self.peakCurrent_AC1 = 0
         self.peakCurrent_AC2 = 0
+        # self.powerMin = 0
+        self.powerMax = 0
         self.averagePower = 0
         self.electricalEnergy = 0
         self.electricalEffciency = 0
@@ -472,6 +482,8 @@ class Simulation(object):
         peakDC = []
         peakAC1 = []
         peakAC2 = []
+        # powerMin = []
+        powerMax = []
 
         # Unpack the results for each day and store them in arrays
         for day in resultDays:
@@ -484,6 +496,8 @@ class Simulation(object):
             peakDC.append(day.peakCurrent_DC)
             peakAC1.append(day.peakCurrent_AC1)
             peakAC2.append(day.peakCurrent_AC2)
+            # powerMin.append(day.powerMin / 1000) # Converts power to kW
+            powerMax.append(day.powerMax / 1000) # Converts power to kW
 
         # Find the maximum currents
         peakDC = max(peakDC)
@@ -500,7 +514,9 @@ class Simulation(object):
             'sunnyTime' : sunnyTime,
             'peakDC' : peakDC,
             'peakAC1' : peakAC1,
-            'peakAC2': peakAC2          
+            'peakAC2': peakAC2,
+            # 'powerMin' : powerMin,
+            "powerMax" : powerMax
         }
 
         return self.powerResults

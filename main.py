@@ -141,9 +141,12 @@ def showResults():
 	# Plot the average power
 	plt.figure(1, figsize=(14, 11))
 	plt.subplot(311)
-	plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'])
-	plt.title('Average Power of the PV farm')
+	p3, = plt.plot(POWER_RESULTS['days'], POWER_RESULTS['averagePower'], 'b')
+	# p4 = plt.plot(POWER_RESULTS['days'], POWER_RESULTS['powerMin'], 'g')
+	p5, = plt.plot(POWER_RESULTS['days'], POWER_RESULTS['powerMax'], 'r')
+	plt.title('Power of the PV farm')
 	plt.ylabel('Power (kW)')
+	plt.legend([p3, p5], ["Average Power", "Maximum Power"], loc=7)
 
 	# Plow the financial data
 	a = plt.subplot(312)
