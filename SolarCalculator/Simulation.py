@@ -218,7 +218,7 @@ class thread_SimulateDay(threading.Thread):
             
                     # DC cable calcs
                     DCresistance = calcCableResistance(DCcable, temperature)
-                    DCcurrent = solarOutput / solarVoltage # TODO find this constant solarVoltage         
+                    DCcurrent = solarOutput / solarVoltage       
                     DCloss = 2 * DCcurrent** 2 * DCresistance
                     DCoutput = solarOutput - DCloss
                 
@@ -516,12 +516,13 @@ class Simulation(object):
         simulation results.'''
 
         # Sum the costs of all the assets 
-        initalCosts = self.parameters['PVArray'].getCost()
-        initalCosts += initalCosts + (2 * self.parameters['DCCable'].getCost()) # Worth of DC cables
+        initalCosts = self.parameters['PVArray'].getCost() * self.parameters['Site'].getArrayNum()
+        initalCosts += 2 * self.parameters['DCCable'].getCost() # Worth of DC cables
         initalCosts += self.parameters['Inverter'].getCost() * self.parameters['Site'].getInverterNum() # Worth of the inverters
-        initalCosts += 3 * self.parameters['AC1Cable'].getCost()  # Worth of AC1 cables
+        initalCosts += 3 * self.parameters['AC1Cable'].getCost() # Worth of AC1 cables
         initalCosts += self.parameters['Transformer'].getCost() * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
-        initalCosts += 3 * self.parameters['AC2Cable'].getCost()  # Worth of the GEP transmission line
+        initalCosts += self.parameters['AC2Cable'].getCost() # Worth of the GEP transmission line
+        initalCosts += self.parameters['Site'].getCost()
 
         # Add the inital asset costs to the loan
         self.parameters['Financial'].addToLoan(initalCosts)
@@ -542,12 +543,12 @@ class Simulation(object):
 
             # Calculate the net value of all the assets, factoring in depreciation
             dailyCapitalWorth = self.parameters['Site'].getDepreciatedValue(i) # Worth of the land
-            dailyCapitalWorth += self.parameters['PVArray'].getDepreciatedValue(i) # made the assumption only one input required (works out total panel worth)
+            dailyCapitalWorth = self.parameters['PVArray'].getDepreciatedValue(i) * self.parameters['Site'].getArrayNum() # made the assumption only one input required (works out total panel worth)
             dailyCapitalWorth += 2 * self.parameters['DCCable'].getDepreciatedValue(i) # Worth of DC cables
             dailyCapitalWorth += self.parameters['Inverter'].getDepreciatedValue(i) * self.parameters['Site'].getInverterNum() # Worth of the inverters
-            dailyCapitalWorth += 3 * self.parameters['AC1Cable'].getDepreciatedValue(i)  # Worth of AC1 cables
+            dailyCapitalWorth += 3 * self.parameters['AC1Cable'].getDepreciatedValue(i) # Worth of AC1 cables
             dailyCapitalWorth += self.parameters['Transformer'].getDepreciatedValue(i) * self.parameters['Site'].getTransformerNum() # Worth of the transfomers
-            dailyCapitalWorth += 3 * self.parameters['AC2Cable'].getDepreciatedValue(i)  # Worth of the GEP transmission line
+            dailyCapitalWorth += self.parameters['AC2Cable'].getDepreciatedValue(i) # Worth of the AC2 transmission line
             
             # Save the current net asset value
             netAssetValue.append(dailyCapitalWorth)
@@ -582,7 +583,14 @@ class Simulation(object):
             'netAssetValue' : netAssetValue,
             'loanValue' : loanValue,
             'accumulativeRevenue' : accumulativeRevenue,
-            'baseCurrency' : self.parameters['Financial'].getBaseCurrency()
+            'baseCurrency' : self.parameters['Financial'].getBaseCurrency(),
+            'arrayCost' : self.parameters['PVArray'].getCost().getAmount() * self.parameters['Site'].getArrayNum(),
+            'DCCableCost' : (2 * self.parameters['DCCable'].getCost().getAmount()),
+            'inverterCost' : self.parameters['Inverter'].getCost().getAmount() * self.parameters['Site'].getInverterNum(),
+            'AC1CableCost' : 3 * self.parameters['AC1Cable'].getCost().getAmount(),
+            'transformerCost' : self.parameters['Transformer'].getCost().getAmount() * self.parameters['Site'].getTransformerNum(),
+            'AC2CableCost' : self.parameters['AC2Cable'].getCost().getAmount(),
+            'siteCost' : self.parameters['Site'].getCost().getAmount()
         }
 
 

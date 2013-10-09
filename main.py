@@ -209,7 +209,21 @@ def showResults():
 	resultsText +=  "----------- FINANCIAL INFORMATION ----------\n"
 	resultsText +=  "--------------------------------------------\n\n"
 
+	resultsText +=  "Financial statement between %s and %s\n\n" % (FINANCIAL_RESULTS['days'][0], FINANCIAL_RESULTS['days'][-1])
+
+	resultsText += "Total Site Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['siteCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total Array Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['arrayCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total DCCable Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['DCCableCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total Inverter Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['inverterCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total AC1Cable Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['AC1CableCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total Transformer Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['transformerCost'], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Total AC2Cable Cost : \n    $ %.2f (%s)\n\n " % (FINANCIAL_RESULTS['AC2CableCost'], FINANCIAL_RESULTS['baseCurrency'])
+
 	resultsText += "Initial Cost : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['loanValue'][0], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Initial Net Asset Value : \n    $ %.2f (%s)\n\n " % (FINANCIAL_RESULTS['netAssetValue'][0], FINANCIAL_RESULTS['baseCurrency'])
+
+	resultsText += "Final Net Asset Value : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['netAssetValue'][-1], FINANCIAL_RESULTS['baseCurrency'])
+	resultsText += "Final Loan Value : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['loanValue'][-1], FINANCIAL_RESULTS['baseCurrency'])
 	resultsText += "Total Revenue : \n    $ %.2f (%s)\n " % (FINANCIAL_RESULTS['accumulativeRevenue'][-1], FINANCIAL_RESULTS['baseCurrency'])
 
 
@@ -750,10 +764,11 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 	
 	def __loadDemoSimulation(self):
-		''' Loads demo values into the simulation fields for testing purposes '''	
+		''' Loads demo values into the simulation fields for testing purposes.
+		The default location is Tongatapu, within The Kingdom of Tonga. '''	
 		
 		# SITE VARIABLES
-		self.inputFields['siteCost'].setFieldValue('10000000')
+		self.inputFields['siteCost'].setFieldValue('100000')
 		self.inputFields['siteAppreciation'].setFieldValue('1.03')
 		self.inputFields['siteLatitude'].setFieldValue('-21.0928')
 		self.inputFields['siteLongitude'].setFieldValue('-175.1050')
@@ -764,7 +779,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.inputFields['siteNumArrays'].setFieldValue('30')
 		self.inputFields['siteNumTransformers'].setFieldValue('1')
 		self.inputFields['siteNumInverters'].setFieldValue('2')
-		self.inputFields['siteNumCircuitBreakers'].setFieldValue('15')
+		self.inputFields['siteNumCircuitBreakers'].setFieldValue('10')
 
 		# FINANCIAL VARIABLES
 		self.inputFields['financialInterestRate'].setFieldValue('6')
@@ -778,7 +793,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.inputFields['panelRating'].setFieldValue('230')
 		self.inputFields['panelDegradation'].setFieldValue('0.4')
 		self.inputFields['panelArea'].setFieldValue('1.63')
-		self.inputFields['panelCost'].setFieldValue('50')
+		self.inputFields['panelCost'].setFieldValue('100')
 		self.inputFields['panelDepreciation'].setFieldValue('6')
 
 		# DC CABLE VARIABLES
@@ -791,7 +806,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.inputFields['inverterPowerFactor'].setFieldValue('1.00')
 		self.inputFields['inverterEfficiency'].setFieldValue('95')
 		self.inputFields['inverterOutputVoltage'].setFieldValue('400')
-		self.inputFields['inverterCost'].setFieldValue('10000')
+		self.inputFields['inverterCost'].setFieldValue('50000')
 		self.inputFields['inverterDepreciation'].setFieldValue('6')
 
 		# AC CABLE VARIABLES
@@ -805,18 +820,18 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.inputFields['transformerOutputVoltage'].setFieldValue('11e3')
 		self.inputFields['transformerEfficiency'].setFieldValue('98.9')
 		self.inputFields['transformerRating'].setFieldValue('1')
-		self.inputFields['transformerCost'].setFieldValue('10000')
+		self.inputFields['transformerCost'].setFieldValue('100000')
 		self.inputFields['transformerDepreciation'].setFieldValue('6')
 
 		# TX CABLE VARIABLES
 		self.inputFields['TXCableDiameter'].setFieldValue('2')
 		self.inputFields['TXCableNumStrands'].setFieldValue('5')
-		self.optionalInputFields['TXCableLength'].setFieldValue('1000')
+		self.optionalInputFields['TXCableLength'].setFieldValue('500')
 		self.inputFields['TXCableCost'].setFieldValue('100')
 		self.inputFields['TXCableDepreciation'].setFieldValue('6')
 
 		# CIRCUIT BREAKERS
-		self.inputFields['circuitBreakerCost'].setFieldValue('4000')
+		self.inputFields['circuitBreakerCost'].setFieldValue('5000')
 		self.inputFields['circuitBreakerDepreciation'].setFieldValue('6')
 
 

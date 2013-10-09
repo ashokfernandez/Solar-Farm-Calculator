@@ -47,7 +47,7 @@ class Asset(object):
 
     def getDepreciatedValue(self, daysOld):
         ''' Returns the asset's value factoring in depreciation for the given amount of days'''
-        return self.cost * (1-self.depRate/(365*100))**daysOld
+        return self.cost * (1-self.depRate/(365.0*100.0))**daysOld
 
     def getDepRate(self):
         ''' Return the asset's depreciation rate of the asset. '''
