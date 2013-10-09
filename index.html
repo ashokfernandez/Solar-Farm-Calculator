@@ -31,37 +31,105 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+        <h1>
+<a name="solar-farm-calculator" class="anchor" href="#solar-farm-calculator"><span class="octicon octicon-link"></span></a>Solar Farm Calculator</h1>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<h3>
+<a name="a-software-tool-to-model-a-generic-solar-photovoltaic-farm" class="anchor" href="#a-software-tool-to-model-a-generic-solar-photovoltaic-farm"><span class="octicon octicon-link"></span></a>A software tool to model a generic solar photovoltaic farm.</h3>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
+<h2>
+<a name="authors" class="anchor" href="#authors"><span class="octicon octicon-link"></span></a>Authors:</h2>
+
+<p><a href="https://github.com/ashokfernandez/">Ashok Fernandez</a>,
+<a href="https://github.com/jarradraumati/">Jarrad Raumati</a>,
+Darren O'Neill</p>
+
+<h2>
+<a name="description" class="anchor" href="#description"><span class="octicon octicon-link"></span></a>Description:</h2>
+
+<p>Models the technical and financial details of a photovoltaic farm. The user
+specifies the parameters of the site which then calculates the expected output
+energy at the grid entry point (GEP).</p>
+
+<p>A site and grid entry point can be selected using GPS coordinates which assist
+in calculating the insolation from the sun using <a href="https://github.com/pingswept/pysolar">PySolar</a>.
+System components such as panels, DC and AC cables, inverter, transformer and
+transmission lines can be specified using the graphical user interface, which
+will then run the model simulation.</p>
+
+<p>The outputs from the simulation can be listed and plotted for the user to
+determine if the parameters produce a viable solar farm.</p>
+
+<h2>
+<a name="how-to-run" class="anchor" href="#how-to-run"><span class="octicon octicon-link"></span></a>How to run:</h2>
+
+<p>In it's current state, the calculator should run on any operating system that supports python and the dependant packges.
+Once dependant packages are installed and an OpenExchangeRates API key is inserted into the relevant place (see below) the 
+program can be run by running main.py either in an IDE or by opening a shell in the main folder and typing</p>
+
+<pre><code>python main.py
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<h3>
+<a name="install-dependancies" class="anchor" href="#install-dependancies"><span class="octicon octicon-link"></span></a>Install Dependancies</h3>
+
+<p>The packages that this project depends on are</p>
+
+<ul>
+<li><a href="http://www.numpy.org/">NumPy</a></li>
+<li><a href="http://matplotlib.org/">MatPlotLib</a></li>
+<li><a href="http://pysolar.org/">PySolar</a></li>
+<li><a href="http://www.wxpython.org/">wxPython 2.9</a></li>
+</ul><p>Furthermore the GUI was designed using <a href="http://sourceforge.net/projects/wxformbuilder/">wxFormBuilder</a>, the design file for this can 
+be found in the GUIDesign folder</p>
+
+<p>Special thanks goes out to the above projects for providing such great tools!</p>
 
 <h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+<a name="openexchangeratesorg-api-key" class="anchor" href="#openexchangeratesorg-api-key"><span class="octicon octicon-link"></span></a>OpenExchangeRates.org API Key:</h3>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<p>An API key is required from <a href="https://openexchangerates.org/signup/free">OpenExchangeRates.org</a>. The free API key will suffice
+for this project as there is a limit to how often the software will hit the API for new data. When you have gotten an API key 
+place it at the top of Assets.py to ensure the exchange rates are retreieved.</p>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<h2>
+<a name="build-the-documentation" class="anchor" href="#build-the-documentation"><span class="octicon octicon-link"></span></a>Build the Documentation:</h2>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
-
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
-
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>The code has been heavily documented, this can be compiled into a PDF using <a href="http://www.stack.nl/%7Edimitri/doxygen/">doxygen</a> and <a href="http://www.latex-project.org/">latex</a> or as a web reference manual using <a href="http://epydoc.sourceforge.net/">Epydoc</a>. </p>
 
 <h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<a name="html-documentation" class="anchor" href="#html-documentation"><span class="octicon octicon-link"></span></a>HTML Documentation</h3>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p>To build the HTML documentation (recommeded over the PDF - it's a lot easier to follow) you first need to install Epydoc. If you have pip installed you can do this opening a terminal and typing</p>
+
+<pre><code>sudo pip install epydoc
+</code></pre>
+
+<p>Otherwise follow the installation instructions on the <a href="http://epydoc.sourceforge.net/manual-install.html">Epydoc website</a>.</p>
+
+<p>Once Epydoc is installed, open a terminal in the /Docs/ folder and type</p>
+
+<pre><code>epydoc --config epydocfile
+</code></pre>
+
+<p>This will generate HTML documentation which can be accessed by opening /Docs/html/index.html</p>
+
+<h3>
+<a name="pdf-documentation" class="anchor" href="#pdf-documentation"><span class="octicon octicon-link"></span></a>PDF Documentation</h3>
+
+<p>To build the PDF documentation install doxygen and latex then open a shell in the Docs directory and type</p>
+
+<pre><code>doxygen
+cd latex/
+make
+</code></pre>
+
+<p>A documentation file 'refman.pdf' will be avaliable in the latex folder which outlines in detail the different classes in the code and how they function.</p>
+
+<h2>
+<a name="future-work" class="anchor" href="#future-work"><span class="octicon octicon-link"></span></a>Future Work:</h2>
+
+<p>Ideally it would be nice to package the program up as a standalone .exe and application for Windows and Mac OSX respectively. The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key.</p>
       </section>
     </div>
 
