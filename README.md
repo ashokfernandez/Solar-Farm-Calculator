@@ -50,13 +50,13 @@ The code has been heavily documented, this can be compiled into a PDF using [dox
 ### HTML Documentation
 To build the HTML documentation (recommeded over the PDF - it's a lot easier to follow) you first need to install Epydoc. If you have pip installed you can do this opening a terminal and typing
    
-   sudo pip install epydoc
+    sudo pip install epydoc
 
 Otherwise follow the installation instructions on the [Epydoc website](http://epydoc.sourceforge.net/manual-install.html).
 
 Once Epydoc is installed, open a terminal in the /Docs/ folder and type
 
-   epydoc --config epydocfile
+    epydoc --config epydocfile
 
 This will generate HTML documentation which can be accessed by opening /Docs/html/index.html
 
