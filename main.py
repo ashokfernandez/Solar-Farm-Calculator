@@ -13,6 +13,8 @@ Author: Jarrad Raumati
 Date: 20/09/2013
 '''
 
+MAC_BUILD = True
+
 # Import system modules
 import os
 import urllib2                    
@@ -1067,7 +1069,8 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 if __name__ == '__main__':
 	
 	# Change the working directory to the resources folder so the currency list and picture can be found
-	os.chdir('./Resources/')
+	if not MAC_BUILD:
+		os.chdir('./Resources/')
 
 	# Mandatory in wx, create an app, False stands for not deteriction stdin/stdout
 	# Refer manual for details
