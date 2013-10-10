@@ -19,6 +19,7 @@ import urllib2
 import sys
 import wx
 import datetime
+import webbrowser
 
 # Import NumPy and MatPlotLib
 import numpy
@@ -33,6 +34,7 @@ import SolarCalculator.Assets
 # Load the utility modules
 import SolarCalculator.Utils.ReverseGeocode
 import SolarCalculator.Utils.AverageTemperatureData 
+import SolarCalculator.Utils.PyRTFParser
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -87,6 +89,19 @@ def get_currency_list():
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
 		return currencies
+
+
+
+def get_help_html():
+	''' Returns a string with the contents to the help file - help.html'''
+	
+	# Open the html help file
+	with open('help.html', 'r') as f:
+		
+		# Read the HTML into an array then join it into a single string
+		htmlLines = f.readlines()
+		helpString = ''.join(htmlLines)
+		return helpString
 
 
 
@@ -428,6 +443,18 @@ class DialogBox_GeoCodeError(SolarCalculator.GUI.GeoCodeError):
 		self.EndModal(1)
 
 
+# Implement the functionality of the NoCurrency error message
+class DialogBox_NoCurrency(SolarCalculator.GUI.NoCurrency):
+	def __init__( self ):
+		''' Creates the "NoCurrency Error" dialog box and uses the given string as the error message.
+		the program will quit when the dialog is dismissed'''
+		SolarCalculator.GUI.NoCurrency.__init__(self, None)
+		self.ShowModal()
+
+	def evt_dialogOK_clicked( self, event ):
+		''' Closes the window when the OK button is pressed'''
+		self.EndModal(1)
+
 
 # Implement the functionality of the Date error message
 class DialogBox_DateError(SolarCalculator.GUI.DateError):
@@ -490,7 +517,6 @@ class DialogBox_ProgressDialog(object):
  	def closeDialog(self):
  		''' Closes the dialog box'''
 		self.progressBox.Destroy()
-		self.progressBox.EndModal(1)
 
 
 
@@ -508,9 +534,9 @@ class InputField(object):
 	'''
 
 	# Colours to colour the labels when the input is valid or invalid
-	RED = (255,0,0, 200)
-	BLACK = (0,0,0)
-	WHITE = (255,255,255,255)
+	RED = 'red' # (255,0,0, 200)
+	BLACK = 'black' # (0,0,0)
+	WHITE = 'white' #(255,255,255,255)
 
 
 	def __init__(self, field, label, condition='', upperLimit=False, lowerLimit=False):
@@ -652,6 +678,14 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		except:
 			DialogBox_FatalError("Unable to load the list of currencies from currencyList.txt")
 
+		# Attempt to load the help file
+		try:
+			helpHTML = get_help_html()
+			self.helpHTML.SetPage(helpHTML)
+		except:
+			DialogBox_FatalError("Unable to load the help file from help.html")
+
+
 		# Set the values of all the currency lists to the list of avaliable currencies
 		self.siteCost_currency.SetItems(currencies)
 		self.financialCurrency_currency.SetItems(currencies)
@@ -743,7 +777,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		# --------------------------------------------------------------------------------------------
 		# SAVE A REFERENCE TO ALL SELECTOR BOXES
 		# --------------------------------------------------------------------------------------------
-		# 
+		
 		self.selectors = {}
 
 		# CURRENCIES
@@ -762,8 +796,23 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		self.selectors['ACCableMaterial'] = self.ACCableMaterial_input
 		self.selectors['TXCableMaterial'] = self.TXCableMaterial_input
 
-		# USED FOR TESTING PURPOSES - loads default values into the fields
-		# self.__loadDemoSimulation()
+
+
+		# --------------------------------------------------------------------------------------------
+		# SET CURRENCY DEFAULTS
+		# --------------------------------------------------------------------------------------------
+		 
+		NZDIndex = 104
+		self.selectors['siteCurrency'].SetSelection(NZDIndex)
+		self.selectors['financialBaseCurrency'].SetSelection(NZDIndex)
+		self.selectors['panelCurrency'].SetSelection(NZDIndex)
+		self.selectors['circuitBreakerCurrency'].SetSelection(NZDIndex)
+		self.selectors['DCCableCurrency'].SetSelection(NZDIndex)
+		self.selectors['inverterCurrency'].SetSelection(NZDIndex)
+		self.selectors['ACCableCurrency'].SetSelection(NZDIndex)
+		self.selectors['transformerCurrency'].SetSelection(NZDIndex)
+		self.selectors['TXCableCurrency'].SetSelection(NZDIndex)
+		
 
 	
 	def __loadDemoSimulation(self):
@@ -846,6 +895,12 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		# DO ANY CLEAN UP HERE
 		sys.exit()
 
+
+	def evt_loadDemo_clicked( self, event ):
+		''' Loads demo values into the fields to give new users a nice set of values to play with'''
+		self.__loadDemoSimulation()
+
+
 	def evt_runSimulation_clicked( self, event ):
 		''' Event that is run when the "Run Simulation" button is clicked. 
 
@@ -915,6 +970,10 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 			# Save the selection
 			inputData[key] = value
 
+		# Check currencies were actually selected
+		if wx.NOT_FOUND in inputData.values():
+			DialogBox_NoCurrency()
+
 
 		# --------------------------------------------------------------------------------------------
 		# RUN A SIMULATION
@@ -980,6 +1039,11 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 		# Enable or disable the wxTextCtrl as appropriate
 		self.TXCableLength_input.Enable(isEnabled)
 
+
+	def evt_htmlLink_clicked( self, event ):
+		''' When a user clicks on a link in the help section this will open it in a browser window'''
+		link = event.GetLinkInfo().GetHref()
+		webbrowser.open(link)
 		
 
 
