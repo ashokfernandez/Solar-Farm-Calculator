@@ -89,6 +89,11 @@ def get_currency_list():
 		# Read the currencies into an array, the go through the array and remove the newlines
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
+
+		# Convert the currency names to ascii if we're on windows
+		if platform.system() == 'Windows':
+			currencies = [x. .encode('ascii', 'ignore') for x in currencies]
+			
 		return currencies
 
 
