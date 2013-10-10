@@ -20,6 +20,7 @@ import sys
 import wx
 import datetime
 import webbrowser
+import platform
 
 # Import NumPy and MatPlotLib
 import numpy
@@ -34,16 +35,16 @@ import SolarCalculator.Assets
 # Load the utility modules
 import SolarCalculator.Utils.ReverseGeocode
 import SolarCalculator.Utils.AverageTemperatureData 
-import SolarCalculator.Utils.PyRTFParser
+
 
 
 # ------------------------------------------------------------------------------------------------------
 # CONSTANTS
 # ------------------------------------------------------------------------------------------------------
 
-RED = (255,0,0, 200)
-BLACK = (0,0,0)
-WHITE = (255,255,255,255)
+RED = 'red' # (255,0,0, 200)
+BLACK = 'black' # (0,0,0)
+WHITE = 'white' # (255,255,255,255)
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -934,8 +935,13 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 
 		# If the inputs aren't valid, abort the simulation with an error message
 		if not inputsValid:
-			DialogBox_IncompleteForm()
-			return None
+
+                    # Force a UI redraw for the sake of MS Windows... typical
+                    if platform.system() == 'Windows':
+                        self.Calculator.Refresh() 
+
+		    DialogBox_IncompleteForm()
+                    return None
 
 
 
