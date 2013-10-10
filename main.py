@@ -92,8 +92,8 @@ def get_currency_list():
 
 		# Convert the currency names to ascii if we're on windows
 		if platform.system() == 'Windows':
-			currencies = [x. .encode('ascii', 'ignore') for x in currencies]
-			
+			currencies = [x.encode('ascii', 'ignore') for x in currencies]
+
 		return currencies
 
 
