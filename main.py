@@ -97,10 +97,11 @@ def get_currency_list():
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
 
-		# Convert the currency names to ascii if we're on windows
+		# Convert the currency names to ascii if we're on windows or decode from utf-8 on Mac OSX
 		if platform.system() == 'Windows':
 			currencies = [x.encode('ascii', 'ignore') for x in currencies]
-
+		elif platform.system() == 'Darwin':
+			currencies = [x.decode('utf-8', 'ignore') for x in currencies]
 		return currencies
 
 
