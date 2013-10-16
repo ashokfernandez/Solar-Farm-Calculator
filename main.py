@@ -13,7 +13,9 @@ Author: Jarrad Raumati
 Date: 20/09/2013
 '''
 
-MAC_BUILD = True
+# Check if we're running OSX
+import platform
+MAC_BUILD = True if platform.system() == 'Darwin' else False
 
 # Import system modules
 import os
@@ -38,6 +40,9 @@ import SolarCalculator.Assets
 import SolarCalculator.Utils.ReverseGeocode
 import SolarCalculator.Utils.AverageTemperatureData 
 
+import sys                        # Fixes Unicode encoding error
+reload(sys)                       # ...
+sys.setdefaultencoding("utf-8")   # ...
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -1069,6 +1074,7 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 if __name__ == '__main__':
 	
 	# Change the working directory to the resources folder so the currency list and picture can be found
+	# This happens automatically when building the bundle for OSX so don't worry about it in that case
 	if not MAC_BUILD:
 		os.chdir('./Resources/')
 

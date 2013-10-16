@@ -39,7 +39,9 @@ Usage example:
 
 '''
 
-MAC_BUILD = True
+# Check if we're running OSX
+import platform
+MAC_BUILD = True if platform.system() == 'Darwin' else False
 
 import os
 import urllib2                    # For downloading the currency data
