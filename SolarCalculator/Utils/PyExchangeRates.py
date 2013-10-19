@@ -41,7 +41,7 @@ Usage example:
 
 # Check if we're running OSX
 import platform
-MAC_BUILD = True if platform.system() == 'Darwin' else False
+MAC_OSX = True if platform.system() == 'Darwin' else False
 
 import os
 import urllib2                    # For downloading the currency data
@@ -253,7 +253,7 @@ class Exchange(object):
         self.currencies = {}              # Stores the currencies
         self.lastUpdated = None
 
-        if not MAC_BUILD:
+        if not MAC_OSX:
             self.filename = appID + '.json'   # Filename where the exchange rates are stored
         else:
             # Store the saved rates in the users home dir
