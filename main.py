@@ -13,6 +13,14 @@ Author: Jarrad Raumati
 Date: 20/09/2013
 '''
 
+# Conditionals for the OS we're running
+import platform
+MAC_OSX = True if platform.system() == 'Darwin' else False
+WINDOWS = True if platform.system() == 'Windows' else False
+
+# Flag to set if we're building the Mac OSX executable
+MAC_BUILD = False
+
 # Import system modules
 import os
 import urllib2                    
@@ -36,6 +44,9 @@ import SolarCalculator.Assets
 import SolarCalculator.Utils.ReverseGeocode
 import SolarCalculator.Utils.AverageTemperatureData 
 
+import sys                        # Fixes Unicode encoding error
+reload(sys)                       # ...
+sys.setdefaultencoding("utf-8")   # ...
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -90,10 +101,11 @@ def get_currency_list():
 		currencies = f.readlines()
 		currencies = [x.strip() for x in currencies]
 
-		# Convert the currency names to ascii if we're on windows
-		if platform.system() == 'Windows':
+		# Convert the currency names to ascii if we're on windows or decode from utf-8 on Mac OSX
+		if WINDOWS:
 			currencies = [x.encode('ascii', 'ignore') for x in currencies]
-
+		elif MAC_OSX:
+			currencies = [x.decode('utf-8', 'ignore') for x in currencies]
 		return currencies
 
 
@@ -1067,7 +1079,9 @@ class SolarFarmCalculator(SolarCalculator.GUI.ApplicationFrame):
 if __name__ == '__main__':
 	
 	# Change the working directory to the resources folder so the currency list and picture can be found
-	os.chdir('./Resources/')
+	# This happens automatically when building the bundle for OSX so don't worry about it in that case
+	if not MAC_BUILD:
+		os.chdir('Resources')
 
 	# Mandatory in wx, create an app, False stands for not deteriction stdin/stdout
 	# Refer manual for details

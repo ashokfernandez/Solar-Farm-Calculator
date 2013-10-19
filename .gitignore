@@ -3,4 +3,8 @@
 *.pyc
 *.aux
 *.eps
-/Docs/latex/
+/Docs/latex/*
+/Docs/html/*
+/Docs/Documentation.zip
+/MacBuild/build/*
+/MacBuild/dist/*

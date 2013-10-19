@@ -38,6 +38,12 @@ Usage example:
 1061.079000 AUD
 
 '''
+
+# Check if we're running OSX
+import platform
+MAC_OSX = True if platform.system() == 'Darwin' else False
+
+import os
 import urllib2                    # For downloading the currency data
 import json                       # Allows the data to be decoded
 from datetime import datetime     # For timestamping
@@ -244,9 +250,16 @@ class Exchange(object):
 
     def __init__(self, appID):
         self.appID = appID                # The OpenExchangeRates API key to use
-        self.filename = appID + '.json'   # Filename where the exchange rates are stored
         self.currencies = {}              # Stores the currencies
         self.lastUpdated = None
+
+        if not MAC_OSX:
+            self.filename = appID + '.json'   # Filename where the exchange rates are stored
+        else:
+            # Store the saved rates in the users home dir
+            home = os.path.expanduser("~")
+            self.filename = os.path.join(home, '.SolarFarmExchangeRates-' + appID + '.json')
+            
         
         # Load currencies from a JSON file that is storing the latest versions of the currencies if it exists
         fileFound = self.__loadFromFile()
@@ -289,7 +302,7 @@ class Exchange(object):
         jsonExchange = jsonExchange[:-1] + ',' + timestamp[1:]
         
         # Write exchange data to a file
-        with open(self.filename, 'w') as f:
+        with open(self.filename, 'w+') as f:
             f.write(jsonExchange)
             f.close()
 
