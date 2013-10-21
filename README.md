@@ -72,4 +72,4 @@ A documentation file 'refman.pdf' will be avaliable in the latex folder which ou
 
 
 ## Future Work:
-Ideally it would be nice to package the program up as a standalone .exe and application for Windows and Mac OSX respectively. The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key.
+The addition of extra settings in the settings pane would be nice - perhaps include an option to tweak the simulation timestep and a space to enter an OpenExchangeRates API key.
